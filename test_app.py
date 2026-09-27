@@ -6,6 +6,7 @@ import threading
 from unittest import mock
 
 import app
+import feeds
 
 T = 1_000_000
 
@@ -67,8 +68,41 @@ with mock.patch.object(app, "HOURLY_PER_IP", 2), mock.patch.object(app, "DAILY_L
     assert app.over_limit("2.2.2.2") is None             # 3rd call overall
     assert "daily limit" in app.over_limit("3.3.3.3")    # cap reached for everyone
 
+# Live feeds: CAP event names -> our types (no double-counting "heavy rain" as "rain")
+assert feeds.event_types("Heavy Rain") == ["Heavy Rainfall"]
+assert feeds.event_types("Moderate Rain with Thunderstorm and lightning") == ["Rain", "Thunderstorm", "Lightning"]
+assert feeds.event_types("Something new") == ["Other"]
+
+# CAP area descriptions -> places
+assert feeds.cap_places("Ganga, Rishikesh, Dehradun, Uttarakhand", 30.11, 78.31)[0]["state"] == "Uttarakhand"
+districts = feeds.cap_places("Karur, Tiruchirappalli districts of Tamil Nadu", None, None)
+assert [(p["name"], p["level"], p["state"]) for p in districts] == [("Karur", "district", "Tamil Nadu"),
+                                                                    ("Tiruchirappalli", "district", "Tamil Nadu")]
+assert [(p["name"], p["level"]) for p in feeds.cap_places("8 districts of Rajasthan", None, None)] == [("Rajasthan", "state")]
+
+# A real SACHET CAP alert (CWC river flood), trimmed
+CAP_XML = """<cap:alert xmlns:cap="urn:oasis:names:tc:emergency:cap:1.2"><cap:sender>Uttarakhand-SDMA</cap:sender>
+<cap:sent>2026-09-27T21:57:53+05:30</cap:sent><cap:status>Actual</cap:status><cap:msgType>Update</cap:msgType>
+<cap:info><cap:language>en-IN</cap:language><cap:event>Flood</cap:event><cap:severity>Severe</cap:severity>
+<cap:certainty>Observed</cap:certainty><cap:expires>2026-09-28T10:00:00+05:30</cap:expires>
+<cap:headline>River Ganga at Rishikesh continues to flow in above normal flood situation.</cap:headline>
+<cap:description>At 9:00 pm it was flowing at 340.02 m, 0.52 m above its Warning Level.</cap:description>
+<cap:area><cap:areaDesc>Ganga, Rishikesh, Dehradun, Uttarakhand </cap:areaDesc><cap:altitude>30.11</cap:altitude>
+<cap:ceiling>78.31</cap:ceiling></cap:area></cap:info></cap:alert>"""
+cap = feeds.parse_cap("123", "CWC", CAP_XML.encode())
+assert (cap["event_types"], cap["severity"], cap["timing"], cap["source_type"]) == (["Flood"], "high", "observed", "official")
+assert (cap["places"][0]["lat"], cap["places"][0]["lon"]) == (30.11, 78.31) and cap["text"].startswith("At 9:00 pm")
+assert feeds.parse_cap("124", "CWC", CAP_XML.replace("Actual", "Exercise").encode()) is None  # drills are skipped
+
+# Open-Meteo readings vs IMD thresholds
+calm = {"time": [1, 2], "precipitation": [1, 2], "temperature_2m": [30, 31], "wind_gusts_10m": [10, 20]}
+assert feeds.weather_events("Pune", "Maharashtra", 18.5, 73.9, calm) == []
+storm = {"time": [1, 2], "precipitation": [60, 70], "temperature_2m": [30, 31], "wind_gusts_10m": [10, 95]}
+got = {r["event_types"][0]: r["severity"] for r in feeds.weather_events("Pune", "Maharashtra", 18.5, 73.9, storm)}
+assert got == {"Heavy Rainfall": "high", "Strong Winds": "high"}, got  # 130 mm = "very heavy"; 95 km/h gusts
+
 # HTTP handling
-srv =app.ThreadingHTTPServer(("127.0.0.1", 0), app.Handler)
+srv = app.ThreadingHTTPServer(("127.0.0.1", 0), app.Handler)
 threading.Thread(target=srv.serve_forever, daemon=True).start()
 port = srv.server_address[1]
 

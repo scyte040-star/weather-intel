@@ -4,92 +4,232 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Weather Intelligence · India</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
-  :root { --bg: #f5f6f8; --panel: #fff; --line: #e2e5ea; --text: #151820; --muted: #636b7a;
-          --ok: #15803d; --warn: #b45309; --bad: #b91c1c; --accent: #1d4ed8; }
+  :root {
+    --bg: #edf1f5; --panel: #ffffff; --panel-2: #f5f7fa; --line: #dbe2ea; --text: #0e1a28; --muted: #5a6a7c;
+    --accent: #1d4f91; --accent-soft: #e3ecf8;
+    --ok: #1c7445; --ok-soft: #dcf2e5; --warn: #8f5500; --warn-soft: #fcefd6; --bad: #b3261e; --bad-soft: #fbe1de;
+    --fc: #3f3d9e; --fc-soft: #e7e6fb;
+    /* IMD's colour-coded warning scale */
+    --sev-low: #2e9e5b; --sev-moderate: #e0a800; --sev-high: #ef7300; --sev-extreme: #d42a3c;
+    --pin-ring: #ffffff;
+    --shadow: 0 1px 2px rgb(14 26 40 / 8%), 0 6px 20px rgb(14 26 40 / 8%);
+    --sans: "IBM Plex Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+    --cond: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a121b; --panel: #101b27; --panel-2: #152231; --line: #213244; --text: #e3ebf3; --muted: #8fa1b4;
+      --accent: #86b4ff; --accent-soft: #1a2c44;
+      --ok: #62d394; --ok-soft: #13301f; --warn: #f3b760; --warn-soft: #382811; --bad: #ff8d84; --bad-soft: #3b1917;
+      --fc: #b8b5ff; --fc-soft: #242347; --pin-ring: #101b27;
+      --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 6px 20px rgb(0 0 0 / 35%);
+      color-scheme: dark;
+    }
+    .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.82) contrast(.92) saturate(.55); }
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; background: var(--bg); color: var(--text);
-         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  header { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; padding: 10px 16px;
-           background: var(--panel); border-bottom: 1px solid var(--line); }
-  h1 { margin: 0; font-size: 16px; letter-spacing: -.01em; }
-  .live { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 6px; }
-  .live::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); animation: blink 2s infinite; }
-  @keyframes blink { 50% { opacity: .3; } }
-  .stats { display: flex; gap: 22px; margin-left: auto; flex-wrap: wrap; }
-  .stat b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
-  .stat span { color: var(--muted); font-size: 12px; }
-  .stat.ok b { color: var(--ok); } .stat.warn b { color: var(--warn); } .stat.bad b { color: var(--bad); }
-  main { display: grid; grid-template-columns: 390px 1fr; min-height: 0; }
+  html, body { height: 100%; }
+  body { margin: 0; display: grid; grid-template-rows: auto auto 1fr; background: var(--bg); color: var(--text);
+         font: 14px/1.45 var(--sans); }
+  button, select, input, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  /* Header */
+  .top { display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; padding: 10px 16px;
+         background: var(--panel); border-bottom: 1px solid var(--line); }
+  .brand h1 { margin: 0; font: 700 19px/1.1 var(--cond); letter-spacing: .005em; text-wrap: balance; }
+  .brand p { margin: 1px 0 0; color: var(--muted); font-size: 12.5px; }
+  .live { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px; border-radius: 99px;
+          background: var(--ok-soft); color: var(--ok); font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: blink 2s infinite; }
+  .live.down { background: var(--bad-soft); color: var(--bad); }
+  @keyframes blink { 50% { opacity: .25; } }
+  .sources { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .src { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 99px;
+         background: var(--panel-2); font-size: 12px; white-space: nowrap; }
+  .src::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .src.ok::before { background: var(--ok); }
+  .src.loading::before { animation: blink 1s infinite; }
+  .src.error::before { background: var(--bad); }
+  .src b { font: 500 12px var(--mono); }
+
+  /* Summary strip */
+  .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--line);
+          border-bottom: 1px solid var(--line); }
+  .kpi { background: var(--panel); padding: 10px 16px 12px; min-width: 0; }
+  .kpi .label { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+  .kpi .value { font: 600 28px/1.15 var(--cond); font-variant-numeric: tabular-nums; }
+  .kpi .sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sevbar { display: flex; gap: 2px; height: 6px; margin-top: 6px; }
+  .sevbar span { border-radius: 2px; background: var(--c); min-width: 0; }
+  .verif { display: flex; gap: 16px; }
+  .verif .value { font-size: 22px; }
+  .verif .ok { color: var(--ok); } .verif .warn { color: var(--warn); } .verif .bad { color: var(--bad); }
+
+  /* Layout */
+  main { display: grid; grid-template-columns: 410px 1fr; min-height: 0; }
   aside { display: flex; flex-direction: column; min-height: 0; background: var(--panel); border-right: 1px solid var(--line); }
-  #map { min-height: 0; }
-  details { padding: 12px 16px; border-bottom: 1px solid var(--line); }
-  summary { cursor: pointer; font-weight: 600; }
+  #map { min-height: 0; background: var(--panel-2); }
+  .banner { margin: 0; padding: 8px 16px; background: var(--warn-soft); color: var(--warn); font-size: 12.5px; font-weight: 600;
+            border-bottom: 1px solid var(--line); }
+
+  /* Report form (only when AI analysis is configured) */
+  details.report { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  details.report summary { cursor: pointer; font: 600 14px var(--cond); }
   form { display: grid; gap: 8px; margin-top: 10px; }
-  textarea, select, input, button { font: inherit; color: inherit; }
-  textarea, input, select { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
-  textarea { min-height: 88px; resize: vertical; }
-  textarea:focus, input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  textarea, input, select { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
+  textarea { min-height: 84px; resize: vertical; }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  button { padding: 8px 12px; border: 0; border-radius: 6px; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
-  button:disabled { opacity: .6; cursor: progress; }
-  #report-out { font-size: 13px; min-height: 1em; margin: 0; }
+  .btn { padding: 8px 12px; border: 0; border-radius: 6px; background: var(--accent); color: var(--panel); font-weight: 600; cursor: pointer; }
+  .btn:disabled { opacity: .6; cursor: progress; }
+  #report-out { margin: 0; min-height: 1em; font-size: 13px; }
   #report-out.ok { color: var(--ok); } #report-out.err { color: var(--bad); }
-  .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
-  .filters select { padding: 5px 7px; font-size: 13px; }
-  #feed { flex: 1; overflow: auto; list-style: none; margin: 0; padding: 0; }
-  #feed li { padding: 10px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
-  #feed li:hover, #feed li:focus-visible { background: #f1f4f9; outline: none; }
-  #feed li.new { animation: flash 2.5s ease-out; }
-  @keyframes flash { from { background: #fff4c2; } to { background: transparent; } }
-  #feed .empty { color: var(--muted); cursor: default; }
-  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-  .title { font-weight: 600; }
-  .where, .meta { color: var(--muted); font-size: 13px; }
-  .badges { display: flex; gap: 4px; flex-shrink: 0; }
-  .badge { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 99px; white-space: nowrap; }
-  .st-verified { background: #dcfce7; color: var(--ok); }
-  .st-review { background: #fef3c7; color: var(--warn); }
-  .st-misleading { background: #fee2e2; color: var(--bad); }
-  .fc { background: #e0e7ff; color: #3730a3; }
-  .pop { max-height: 340px; overflow: auto; }
-  .pop .why { margin: 6px 0; font-size: 12px; padding: 6px 8px; background: var(--bg); border-radius: 6px; }
-  .timeline { list-style: none; margin: 8px 0 0; padding: 0 0 0 12px; border-left: 2px solid var(--line); }
-  .timeline li { margin: 0 0 8px; }
-  .timeline time { font-weight: 600; font-variant-numeric: tabular-nums; }
-  .timeline .src { color: var(--muted); font-size: 12px; }
+
+  /* Filters */
+  .controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .controls label, .feedhead label { display: grid; gap: 3px; font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+                                     text-transform: uppercase; color: var(--muted); }
+  .controls select, .feedhead select { padding: 5px 6px; font-size: 13px; letter-spacing: 0; text-transform: none; font-weight: 400; color: var(--text); }
+  .feedhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 16px;
+              border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
+  .feedhead label { display: flex; align-items: center; gap: 6px; }
+  .feedhead select { width: auto; }
+
+  /* Feed */
+  #feed { flex: 1; overflow: auto; margin: 0; padding: 0; list-style: none; }
+  .card { position: relative; display: grid; gap: 4px; padding: 11px 16px 12px 20px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--c); }
+  .card:hover { background: var(--panel-2); }
+  .card:focus-visible { outline: none; background: var(--panel-2); box-shadow: inset 0 0 0 2px var(--accent); }
+  .card.new { animation: flash 2.5s ease-out; }
+  @keyframes flash { from { background: var(--warn-soft); } }
+  .card .title { display: flex; gap: 7px; align-items: baseline; font: 600 15.5px/1.25 var(--cond); }
+  .card .where { font-size: 13px; overflow-wrap: anywhere; }
+  .card .meta { display: flex; flex-wrap: wrap; gap: 4px 6px; font-size: 12px; color: var(--muted); }
+  .card .meta .ago { font-family: var(--mono); font-size: 11.5px; }
+  .unres { color: var(--warn); }
+  .empty { padding: 28px 16px; color: var(--muted); text-align: center; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .chip.sev { background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--text); }
+  .chip.sev::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+  .chip.verified { background: var(--ok-soft); color: var(--ok); }
+  .chip.review { background: var(--warn-soft); color: var(--warn); }
+  .chip.misleading { background: var(--bad-soft); color: var(--bad); }
+  .chip.forecast { background: var(--fc-soft); color: var(--fc); }
+  .chip.observed { background: var(--accent-soft); color: var(--accent); }
+  .sev-low { --c: var(--sev-low); } .sev-moderate { --c: var(--sev-moderate); }
+  .sev-high { --c: var(--sev-high); } .sev-extreme { --c: var(--sev-extreme); }
+
+  /* Map pins, popups, legend */
+  .pin-wrap { background: none; border: 0; }
+  .pin { position: relative; display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%;
+         background: var(--c); border: 2px solid var(--pin-ring); box-shadow: 0 1px 5px rgb(0 0 0 / 35%); transition: transform .15s; }
+  .pin span { line-height: 1; filter: drop-shadow(0 1px 1px rgb(0 0 0 / 25%)); }
+  .pin b { position: absolute; top: -5px; right: -7px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px;
+           background: var(--text); color: var(--panel); font: 600 11px/18px var(--mono); text-align: center; }
+  .pin.fc { background: color-mix(in srgb, var(--c) 20%, transparent); border: 2px dashed var(--c); box-shadow: none; }
+  .pin.bad { box-shadow: 0 0 0 3px var(--bad); }
+  .pin.new { animation: ping 1s ease-out 3; }
+  @keyframes ping { 50% { transform: scale(1.3); } }
+  .leaflet-marker-icon:hover .pin, .leaflet-marker-icon:focus-visible .pin { transform: scale(1.15); }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--text); box-shadow: var(--shadow); }
+  .leaflet-popup-content { margin: 14px 16px; }
+  .leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+  .leaflet-bar a { background: var(--panel); color: var(--text); border-color: var(--line); }
+  .leaflet-container .leaflet-control-attribution { background: color-mix(in srgb, var(--panel) 85%, transparent); color: var(--muted); }
+  .leaflet-container .leaflet-control-attribution a, .pop a { color: var(--accent); }
+  .pop { width: 300px; max-width: 70vw; max-height: min(300px, 42vh); overflow: auto; font: 13px/1.45 var(--sans); }
+  .pop .level { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+  .pop .level::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+  .pop h3 { margin: 4px 0 2px; font: 600 17px/1.2 var(--cond); }
+  .pop .where { color: var(--muted); }
+  .pop .chips { margin: 8px 0; }
+  .pop .why { margin: 0 0 10px; padding: 7px 9px; border-radius: 6px; background: var(--panel-2); font-size: 12px; }
+  .timeline { list-style: none; margin: 0; padding: 0 0 0 12px; border-left: 2px solid var(--line); display: grid; gap: 10px; }
+  .timeline .head { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; font-size: 12px; }
+  .timeline time { font: 500 11.5px var(--mono); }
+  .timeline .src-name { font-weight: 600; }
   .timeline p { margin: 2px 0 0; }
   .timeline .flags { color: var(--bad); font-size: 12px; }
-  .legend { background: #fff; padding: 8px 10px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.2); font-size: 12px; line-height: 1.8; }
-  .ring { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 3px solid; vertical-align: -2px; margin-right: 6px; }
-  @media (max-width: 760px) {
+  .legend { padding: 9px 11px; border-radius: 8px; background: var(--panel); color: var(--text); box-shadow: var(--shadow);
+            font-size: 12px; line-height: 1.9; }
+  .legend .scale { display: flex; gap: 10px; flex-wrap: wrap; }
+  .legend .sw { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--c); vertical-align: -1px; margin-right: 4px; }
+  .legend .ring { display: inline-block; width: 13px; height: 13px; border-radius: 50%; border: 2px dashed var(--muted); vertical-align: -2px; margin-right: 4px; }
+  .legend .n { display: inline-block; min-width: 16px; padding: 0 3px; border-radius: 8px; background: var(--text); color: var(--panel);
+               font: 600 10px/16px var(--mono); text-align: center; margin-right: 4px; }
+
+  @media (max-width: 860px) {
     body { height: auto; }
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kpi:last-child { grid-column: 1 / -1; }
     main { grid-template-columns: 1fr; }
-    #map { height: 55vh; order: -1; }
+    #map { height: 58vh; order: -1; }
     aside { border-right: 0; }
     #feed { overflow: visible; }
-    .stats { margin-left: 0; gap: 14px; }
+    .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sources { margin-left: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before { animation: none !important; transition: none !important; }
   }
 </style>
 </head>
 <body>
-<header>
-  <h1>Weather Intelligence · India</h1>
-  <span class="live" id="updated">connecting…</span>
-  <div class="stats">
-    <div class="stat"><b id="s-reports">–</b><span>Reports</span></div>
-    <div class="stat"><b id="s-dupes">–</b><span>Duplicates merged</span></div>
-    <div class="stat"><b id="s-active">–</b><span>Active events</span></div>
-    <div class="stat ok"><b id="s-verified">–</b><span>Verified</span></div>
-    <div class="stat warn"><b id="s-review">–</b><span>Needs review</span></div>
-    <div class="stat bad"><b id="s-misleading">–</b><span>Likely misleading</span></div>
+<header class="top">
+  <div class="brand">
+    <h1>Weather Intelligence · India</h1>
+    <p>Live hazard alerts and observations, grouped into events and checked against their sources</p>
   </div>
+  <span class="live" id="updated">Connecting…</span>
+  <div class="sources" id="sources" aria-label="Data sources"></div>
 </header>
+
+<section class="kpis" aria-label="Summary">
+  <div class="kpi">
+    <div class="label">Events</div>
+    <div class="value" id="k-events">–</div>
+    <div class="sevbar" id="k-sevbar" aria-hidden="true"></div>
+  </div>
+  <div class="kpi">
+    <div class="label">Severe or worse</div>
+    <div class="value" id="k-severe">–</div>
+    <div class="sub" id="k-severe-sub">Orange and red on IMD's scale</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Official alerts</div>
+    <div class="value" id="k-official">–</div>
+    <div class="sub" id="k-official-sub"></div>
+  </div>
+  <div class="kpi">
+    <div class="label">Duplicates merged</div>
+    <div class="value" id="k-merged">–</div>
+    <div class="sub" id="k-merged-sub"></div>
+  </div>
+  <div class="kpi">
+    <div class="label">Verification</div>
+    <div class="verif">
+      <div><div class="value ok" id="k-verified">–</div><div class="sub">Verified</div></div>
+      <div><div class="value warn" id="k-review">–</div><div class="sub">Needs review</div></div>
+      <div><div class="value bad" id="k-misleading">–</div><div class="sub">Misleading</div></div>
+    </div>
+  </div>
+</section>
+
 <main>
   <aside>
-    <details>
+    <p class="banner" id="demo" hidden>Simulated demo reports are mixed in with the live data (DEMO_DATA=1).</p>
+    <details class="report" id="report" hidden>
       <summary>Report a weather event</summary>
       <form id="report-form">
         <textarea id="r-text" required minlength="10" maxlength="5000" aria-label="Report text"
@@ -102,88 +242,118 @@
           </select>
           <input id="r-name" maxlength="80" placeholder="Source name (optional)" aria-label="Source name">
         </div>
-        <button id="r-submit">Analyse &amp; add</button>
+        <button class="btn" id="r-submit">Analyse and add</button>
         <p id="report-out" role="status"></p>
       </form>
     </details>
-    <div class="filters">
-      <select id="f-type" aria-label="Event type"><option value="">All event types</option></select>
-      <select id="f-state" aria-label="State"><option value="">All states</option></select>
-      <select id="f-status" aria-label="Verification status">
-        <option value="">Any status</option><option value="verified">Verified</option>
-        <option value="review">Needs review</option><option value="misleading">Likely misleading</option>
-      </select>
-      <select id="f-sev" aria-label="Minimum severity">
-        <option value="">Any severity</option><option value="moderate">Moderate +</option>
-        <option value="high">High +</option><option value="extreme">Extreme</option>
-      </select>
-      <select id="f-source" aria-label="Source type">
-        <option value="">Any source</option><option value="official">Official</option><option value="news">News</option>
-        <option value="citizen">Citizen</option><option value="social">Social media</option>
-      </select>
-      <select id="f-window" aria-label="Time window">
-        <option value="">Any time</option><option value="3600">Last hour</option>
-        <option value="21600">Last 6 hours</option><option value="86400">Last 24 hours</option>
-      </select>
+    <div class="controls">
+      <label>Event <select id="f-type"><option value="">All types</option></select></label>
+      <label>State <select id="f-state"><option value="">All states</option></select></label>
+      <label>Severity
+        <select id="f-sev">
+          <option value="">Any</option><option value="moderate">Moderate +</option>
+          <option value="high">Severe +</option><option value="extreme">Extreme</option>
+        </select>
+      </label>
+      <label>Timing
+        <select id="f-timing">
+          <option value="">Any</option><option value="observed">Observed</option><option value="forecast">Forecast / warning</option>
+        </select>
+      </label>
+      <label>Source
+        <select id="f-source">
+          <option value="">Any</option><option value="official">Official</option><option value="model">Weather model</option>
+          <option value="news">News</option><option value="citizen">Citizen</option><option value="social">Social media</option>
+        </select>
+      </label>
+      <label>Status
+        <select id="f-status">
+          <option value="">Any</option><option value="verified">Verified</option>
+          <option value="review">Needs review</option><option value="misleading">Likely misleading</option>
+        </select>
+      </label>
+    </div>
+    <div class="feedhead">
+      <span id="count" aria-live="polite"></span>
+      <label>Sort
+        <select id="f-sort"><option value="severity">Most severe</option><option value="latest">Latest</option></select>
+      </label>
     </div>
     <ul id="feed" aria-label="Events"></ul>
   </aside>
-  <div id="map"></div>
+  <div id="map" aria-label="Map of events"></div>
 </main>
+
 <script>
-const TYPES = {
-  "Heavy Rainfall": ["🌧️", "#2563eb"], "Flood": ["🌊", "#1e3a8a"], "Flash Flood": ["🌊", "#312e81"],
-  "Cloudburst": ["☁️", "#4f46e5"], "Thunderstorm": ["⛈️", "#7c3aed"], "Lightning": ["⚡", "#a21caf"],
-  "Hailstorm": ["🧊", "#0891b2"], "Strong Winds": ["💨", "#0d9488"], "Cyclone": ["🌀", "#be185d"],
-  "Dust Storm": ["🌪️", "#a16207"], "Heatwave": ["🔥", "#dc2626"], "Cold Wave": ["❄️", "#0ea5e9"],
-  "Fog": ["🌫️", "#64748b"], "Landslide": ["⛰️", "#78350f"], "Avalanche": ["🏔️", "#475569"],
-  "Drought": ["🏜️", "#d97706"], "Wildfire": ["🔥", "#ea580c"], "Earthquake": ["🏚️", "#57534e"],
-  "Tsunami": ["🌊", "#0369a1"], "Other": ["⚠️", "#6b7280"],
+const ICONS = {
+  "Heavy Rainfall": "🌧️", "Rain": "🌦️", "Flood": "🌊", "Flash Flood": "🌊", "Cloudburst": "☁️", "Thunderstorm": "⛈️",
+  "Lightning": "⚡", "Hailstorm": "🧊", "Strong Winds": "💨", "Cyclone": "🌀", "Dust Storm": "🌪️", "Heatwave": "🔥",
+  "Cold Wave": "❄️", "Fog": "🌫️", "Landslide": "⛰️", "Avalanche": "🏔️", "Drought": "🏜️", "Wildfire": "🔥",
+  "Earthquake": "🏚️", "Tsunami": "🌊", "Other": "⚠️",
 };
-const STATUS = { verified: ["Verified", "#15803d"], review: ["Needs review", "#b45309"], misleading: ["Likely misleading", "#b91c1c"] };
+const STATUS = { verified: "Verified", review: "Needs review", misleading: "Likely misleading" };
 const SEV = ["low", "moderate", "high", "extreme"];
+const SEV_LABEL = { low: "Minor", moderate: "Moderate", high: "Severe", extreme: "Extreme" };
 
 const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
-const type = t => TYPES[t] || TYPES.Other;
-const clock = t => new Date(t * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const icon = t => ICONS[t] || ICONS.Other;
+const clock = t => new Date(t * 1000).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const sev = e => SEV.indexOf(e.severity);
 
-let events = [], now = Date.now() / 1000, lastJson = "", markers = {}, openId = null;
+let events = [], sources = {}, now = Date.now() / 1000, lastJson = "", markers = {}, openId = null;
 const counts = {}, flashUntil = {};
 
 const map = L.map("map", { zoomSnap: 0.5 }).setView([22.8, 80.5], 5);
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 }).addTo(map);
+new ResizeObserver(() => map.invalidateSize()).observe($("map"));  // web fonts and header wrapping resize the map
 const layer = L.layerGroup().addTo(map);
 const legend = L.control({ position: "bottomright" });
 legend.onAdd = () => Object.assign(L.DomUtil.create("div", "legend"), {
-  innerHTML: Object.values(STATUS).map(([label, c]) => `<div><span class="ring" style="border-color:${c}"></span>${label}</div>`).join("")
-    + `<div><span class="ring" style="border-color:#888;border-style:dashed"></span>Forecast</div><div style="color:#636b7a">Fill = event type · size = reports</div>`,
+  innerHTML: `<div class="scale">${SEV.map(s => `<span><i class="sw sev-${s}"></i>${SEV_LABEL[s]}</span>`).join("")}</div>`
+    + `<div><i class="ring"></i>Dashed = forecast / warning</div><div><i class="n">3</i>Reports merged into one event</div>`,
 });
 legend.addTo(map);
 
 function ago(t) {
   const m = Math.max(0, Math.round((now - t) / 60));
-  return m < 1 ? "just now" : m < 60 ? `${m}m ago` : `${Math.floor(m / 60)}h ${m % 60}m ago`;
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  return h < 48 ? `${h}h ${m % 60}m ago` : `${Math.floor(h / 24)}d ago`;
 }
 
-function badges(e) {
-  return `<span class="badges">${e.timing === "forecast" ? '<span class="badge fc">Forecast</span>' : ""}`
-    + `<span class="badge st-${e.status}">${STATUS[e.status][0]}</span></span>`;
+function chips(e) {
+  return `<span class="chip sev sev-${e.severity}">${SEV_LABEL[e.severity]}</span>`
+    + `<span class="chip ${e.timing}">${e.timing === "forecast" ? "Forecast / warning" : "Observed"}</span>`
+    + `<span class="chip ${e.status}">${STATUS[e.status]}</span>`;
+}
+
+function where(e, max = Infinity) {
+  const names = e.places.slice(0, max).join(", ") + (e.places.length > max ? "…" : "");
+  const states = e.states.filter(s => !e.places.join(", ").includes(s));  // skip "Rajasthan — Rajasthan"
+  return esc(names) + (states.length ? " — " + esc(states.join(", ")) : "");
+}
+
+function senders(e) {
+  const names = [...new Set(e.reports.map(r => r.source_name))];
+  return names.slice(0, 2).join(", ") + (names.length > 2 ? ` +${names.length - 2}` : "");
 }
 
 function visible() {
   const f = id => $(id).value;
+  const bySeverity = f("f-sort") === "severity";
   return events.filter(e =>
     (!f("f-type") || e.event_types.includes(f("f-type"))) &&
     (!f("f-state") || e.states.includes(f("f-state"))) &&
-    (!f("f-status") || e.status === f("f-status")) &&
-    SEV.indexOf(e.severity) >= SEV.indexOf(f("f-sev") || "low") &&
+    sev(e) >= SEV.indexOf(f("f-sev") || "low") &&
+    (!f("f-timing") || e.timing === f("f-timing")) &&
     (!f("f-source") || e.source_types.includes(f("f-source"))) &&
-    (!f("f-window") || now - e.last_t <= +f("f-window"))
-  ).sort((a, b) => b.last_t - a.last_t);
+    (!f("f-status") || e.status === f("f-status"))
+  ).sort((a, b) => (bySeverity && sev(b) - sev(a)) || b.last_t - a.last_t);
 }
 
 function fillSelect(id, values) {
@@ -195,31 +365,40 @@ function fillSelect(id, values) {
 }
 
 function popup(e) {
-  return `<div class="pop">
-    <div class="row"><span class="title">${esc(e.event_types.join(", "))}</span>${badges(e)}</div>
-    <div class="where">${esc(e.places.join(", "))}</div>
-    <div class="meta">Severity <b>${esc(e.severity)}</b> · ${plural(e.reports.length, "report")} from ${plural(e.sources, "source")}</div>
-    <div class="why">${esc(e.why)}</div>
+  return `<div class="pop sev-${e.severity}">
+    <div class="level">${SEV_LABEL[e.severity]} · ${plural(e.reports.length, "report")} · ${plural(e.sources, "source")}</div>
+    <h3>${icon(e.event_types[0])} ${esc(e.event_types.join(" · "))}</h3>
+    <div class="where">${where(e)}</div>
+    <div class="chips">${chips(e)}</div>
+    <p class="why">${esc(e.why)}</p>
     <ol class="timeline">${e.reports.map(r => `<li>
-      <time>${clock(r.t)}</time> <span class="src">${esc(r.source_type)} · ${esc(r.source_name)}</span>
+      <div class="head"><time>${clock(r.t)}</time><span class="src-name">${esc(r.source_name)}</span>
+        ${/^https:\/\//.test(r.url || "") ? `<a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">Source ↗</a>` : ""}</div>
       <p>${esc(r.text)}</p>${r.red_flags.length ? `<p class="flags">⚠ ${esc(r.red_flags.join("; "))}</p>` : ""}
     </li>`).join("")}</ol></div>`;
 }
 
-// Forecast rings are drawn larger, and big markers go underneath, so an observed event and a forecast
-// pinned to the same place (e.g. Gaya) both stay visible and clickable.
-const radius = e => 6 + 3 * Math.sqrt(e.reports.length) + (e.timing === "forecast" ? 6 : 0);
+function pinIcon(e) {
+  const n = e.reports.length, fc = e.timing === "forecast";
+  // Forecast rings are drawn larger and underneath, so an observed event and a warning at the same spot both show.
+  const s = Math.round(Math.min(46, 28 + 5 * Math.sqrt(n - 1)) + (fc ? 14 : 0));
+  const cls = `pin sev-${e.severity}${fc ? " fc" : ""}${e.status === "misleading" ? " bad" : ""}${flashUntil[e.id] > Date.now() ? " new" : ""}`;
+  return L.divIcon({
+    className: "pin-wrap", iconSize: [s, s], iconAnchor: [s / 2, s / 2], popupAnchor: [0, -s / 2],
+    html: `<div class="${cls}" style="font-size:${Math.round((fc ? s - 14 : s) * 0.5)}px"><span>${icon(e.event_types[0])}</span>${n > 1 ? `<b>${n}</b>` : ""}</div>`,
+  });
+}
 
 function renderMarkers(list) {
   const keep = openId;
   layer.clearLayers();
   markers = {};
-  for (const e of [...list].sort((a, b) => radius(b) - radius(a))) {
+  for (const e of list) {
     if (e.lat == null) continue;
-    markers[e.id] = L.circleMarker([e.lat, e.lon], {
-      radius: radius(e), color: STATUS[e.status][1], weight: 3,
-      fillColor: type(e.event_types[0])[1], fillOpacity: .75, dashArray: e.timing === "forecast" ? "5 4" : null,
-    }).bindPopup(() => popup(e), { maxWidth: 340 })
+    markers[e.id] = L.marker([e.lat, e.lon], {
+      icon: pinIcon(e), riseOnHover: true, title: `${e.event_types.join(", ")}: ${e.places[0] || ""}`,
+      zIndexOffset: (e.timing === "forecast" ? 0 : 1000) + sev(e) * 100,
+    }).bindPopup(() => popup(e), { maxWidth: 340, minWidth: 260 })
       .on("popupopen", () => { openId = e.id; })
       .on("popupclose", () => { if (openId === e.id) openId = null; })
       .addTo(layer);
@@ -229,26 +408,43 @@ function renderMarkers(list) {
 
 function renderFeed(list) {
   const t = Date.now(), focused = document.activeElement?.closest("#feed li")?.dataset.id;
-  $("feed").innerHTML = list.length ? list.map(e => `<li tabindex="0" data-id="${esc(e.id)}" class="${flashUntil[e.id] > t ? "new" : ""}">
-      <div class="row"><span class="title">${type(e.event_types[0])[0]} ${esc(e.event_types.join(" · "))}</span>${badges(e)}</div>
-      <div class="where">${e.lat == null ? "📍 location unresolved · " : ""}${esc(e.places.slice(0, 4).join(", "))}${e.places.length > 4 ? "…" : ""}${e.states.length ? " — " + esc(e.states.join(", ")) : ""}</div>
-      <div class="meta">${plural(e.reports.length, "report")} · ${plural(e.sources, "source")} · ${esc(e.severity)} · <span class="ago" data-t="${e.last_t}">${ago(e.last_t)}</span></div>
-    </li>`).join("") : '<li class="empty">No events match these filters.</li>';
+  const loading = Object.values(sources).some(s => s.state === "loading");
+  $("count").textContent = events.length ? `${list.length} of ${plural(events.length, "event")}` : "";
+  $("feed").innerHTML = list.length ? list.map(e => `<li class="card sev-${e.severity}${flashUntil[e.id] > t ? " new" : ""}" tabindex="0" data-id="${esc(e.id)}">
+      <div class="title"><span aria-hidden="true">${icon(e.event_types[0])}</span><span>${esc(e.event_types.join(" · "))}</span></div>
+      <div class="where">${e.lat == null ? '<span class="unres">Location unresolved · </span>' : ""}${where(e, 3)}</div>
+      <div class="chips">${chips(e)}</div>
+      <div class="meta"><span>${esc(senders(e))}</span><span aria-hidden="true">·</span><span>${plural(e.reports.length, "report")}</span><span aria-hidden="true">·</span><span class="ago" data-t="${e.last_t}">${ago(e.last_t)}</span></div>
+    </li>`).join("")
+    : `<li class="empty">${events.length ? "No events match these filters." : loading ? "Fetching live alerts…" : "No active alerts right now."}</li>`;
   if (focused) $("feed").querySelector(`li[data-id="${CSS.escape(focused)}"]`)?.focus();  // keep keyboard position
 }
 
-function renderStats() {
-  const n = s => events.filter(e => e.status === s).length;
-  const reports = events.reduce((a, e) => a + e.reports.length, 0);
-  $("s-reports").textContent = reports;
-  $("s-dupes").textContent = reports - events.length;
-  $("s-active").textContent = events.filter(e => e.timing === "observed" && e.status !== "misleading" && now - e.last_t < 86400).length;
-  $("s-verified").textContent = n("verified");
-  $("s-review").textContent = n("review");
-  $("s-misleading").textContent = n("misleading");
+function renderSources() {
+  $("sources").innerHTML = Object.entries(sources).map(([name, s]) => {
+    const tip = s.state === "ok" ? `Updated ${ago(s.updated)}` : s.state === "error" ? `Unavailable: ${s.error}` : "Loading…";
+    return `<span class="src ${s.state}" title="${esc(tip)}">${esc(name)} <b>${s.state === "ok" ? s.count : s.state === "error" ? "!" : "…"}</b></span>`;
+  }).join("");
 }
 
-// Rebuild the feed and markers only when data or filters change; rebuilding on every poll reset
+function renderStats() {
+  const n = f => events.filter(f).length;
+  const reports = events.flatMap(e => e.reports);
+  const official = reports.filter(r => r.source_type === "official");
+  $("k-events").textContent = events.length;
+  $("k-sevbar").innerHTML = SEV.map(s => `<span class="sev-${s}" style="flex:${n(e => e.severity === s)}"></span>`).join("");
+  $("k-severe").textContent = n(e => sev(e) >= 2);
+  $("k-official").textContent = official.length;
+  const agencies = new Set(official.map(r => r.source_name)).size;
+  $("k-official-sub").textContent = `from ${agencies} ${agencies === 1 ? "agency" : "agencies"}`;
+  $("k-merged").textContent = reports.length - events.length;
+  $("k-merged-sub").textContent = `${plural(reports.length, "report")} → ${plural(events.length, "event")}`;
+  $("k-verified").textContent = n(e => e.status === "verified");
+  $("k-review").textContent = n(e => e.status === "review");
+  $("k-misleading").textContent = n(e => e.status === "misleading");
+}
+
+// Rebuild the feed and markers only when data or filters change; rebuilding on every poll would reset
 // keyboard focus, hover and open popups every 5 seconds.
 function render() {
   const list = visible();
@@ -260,34 +456,41 @@ async function poll() {
   try {
     const data = await (await fetch("/api/events")).json();
     now = data.now;
+    const sourcesChanged = JSON.stringify(data.sources) !== JSON.stringify(sources);
+    sources = data.sources;
+    $("demo").hidden = !data.demo;
+    $("report").hidden = !data.ai;
     const json = JSON.stringify(data.events), changed = json !== lastJson;
     if (changed) {
       const first = !lastJson;
       for (const e of data.events) {
-        if (!first && (counts[e.id] || 0) < e.reports.length) flashUntil[e.id] = Date.now() + 2500;
+        if (!first && (counts[e.id] || 0) < e.reports.length) flashUntil[e.id] = Date.now() + 3000;
         counts[e.id] = e.reports.length;
       }
       lastJson = json;
       events = data.events;
       fillSelect("f-type", [...new Set(events.flatMap(e => e.event_types))].sort());
       fillSelect("f-state", [...new Set(events.flatMap(e => e.states))].sort());
-      render();
-    } else {
-      document.querySelectorAll("#feed .ago").forEach(s => { s.textContent = ago(+s.dataset.t); });
     }
+    if (changed || (sourcesChanged && !events.length)) render();
+    else document.querySelectorAll("#feed .ago").forEach(s => { s.textContent = ago(+s.dataset.t); });
     renderStats();
-    $("updated").textContent = `Live · updated ${new Date().toLocaleTimeString()}`;
+    renderSources();
+    $("updated").className = "live";
+    $("updated").textContent = `Live · ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`;
   } catch {
-    $("updated").textContent = "Connection lost, retrying…";
+    $("updated").className = "live down";
+    $("updated").textContent = "Reconnecting…";
   }
 }
 
-document.querySelector(".filters").addEventListener("change", render);
+document.querySelector(".controls").addEventListener("change", render);
+$("f-sort").addEventListener("change", render);
 
 function focusEvent(li) {
   const e = events.find(x => x.id === li?.dataset.id);
   if (!e || e.lat == null) return;
-  map.flyTo([e.lat, e.lon], Math.max(map.getZoom(), 9), { duration: .8 });
+  map.flyTo([e.lat, e.lon], Math.max(map.getZoom(), 8), { duration: .8 });
   map.once("moveend", () => markers[e.id]?.openPopup());
 }
 $("feed").addEventListener("click", ev => focusEvent(ev.target.closest("li")));
@@ -307,7 +510,7 @@ $("report-form").addEventListener("submit", async ev => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
     const places = data.places.map(p => p.name + (p.lat == null ? " (not mapped)" : "")).join(", ") || "no place named";
-    out.textContent = `Added: ${data.event_types.join(", ")} · ${data.severity} · ${data.timing} · ${places}`;
+    out.textContent = `Added: ${data.event_types.join(", ")} · ${SEV_LABEL[data.severity]} · ${places}`;
     out.className = "ok";
     ev.target.reset();
     poll();

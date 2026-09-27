@@ -1,8 +1,8 @@
 """Weather intelligence prototype: reports -> Claude extraction -> geocode -> group duplicates -> verify -> live map.
 
-Run:   python app.py        then open http://localhost:8000
-Seed data works with no installs. To analyse new reports: pip install anthropic, set ANTHROPIC_API_KEY, restart.
-Hosting: set HOST=0.0.0.0 (PORT is read from the environment); see render.yaml.
+Run:   pip install -r requirements.txt; python app.py        then open http://localhost:8000
+Live data (NDMA SACHET, GDACS, USGS, Open-Meteo) needs no key. Set ANTHROPIC_API_KEY to also analyse typed-in
+reports. DEMO_DATA=1 adds the simulated seed reports. Hosting: HOST=0.0.0.0 (PORT from the environment).
 """
 import json
 import math
@@ -16,12 +16,14 @@ from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+import feeds
+
 HERE = Path(__file__).parent
 PROMPT = (HERE / "extract_prompt.md").read_text(encoding="utf-8")
 REPORTS_FILE = HERE / "reports.json"
 GEOCACHE_FILE = HERE / "geocache.json"
 
-EVENT_TYPES = ["Heavy Rainfall", "Flood", "Flash Flood", "Cloudburst", "Thunderstorm", "Lightning", "Hailstorm",
+EVENT_TYPES = ["Heavy Rainfall", "Rain", "Flood", "Flash Flood", "Cloudburst", "Thunderstorm", "Lightning", "Hailstorm",
                "Strong Winds", "Cyclone", "Dust Storm", "Heatwave", "Cold Wave", "Fog", "Landslide", "Avalanche",
                "Drought", "Wildfire", "Earthquake", "Tsunami", "Other"]
 SEVERITY = ["low", "moderate", "high", "extreme"]
@@ -72,7 +74,7 @@ def save(path, obj):
 
 
 START = time.time()
-seed = load(HERE / "seed.json", [])
+seed = load(HERE / "seed.json", []) if os.environ.get("DEMO_DATA") == "1" else []  # simulated, off by default
 for r in seed:
     r["t"] = START - r.pop("minutes_ago") * 60  # negative minutes_ago = report "arrives" live after startup
 submitted = load(REPORTS_FILE, [])
@@ -96,9 +98,29 @@ def over_limit(ip):
         return None
 
 
+REFRESH_S = 300
+live = {name: [] for name in feeds.SOURCES}  # keys fixed up front, so readers can iterate while the thread writes
+feed_status = {name: {"state": "loading"} for name in feeds.SOURCES}
+
+
+def refresh_feeds():
+    while True:
+        for name, fetch in feeds.SOURCES.items():
+            try:
+                reports = fetch()
+                for p in (p for r in reports for p in r["places"] if p["lat"] is None):
+                    p["lat"], p["lon"] = geocode(p) or (None, None)  # cached, so only new places cost a lookup
+                live[name] = reports
+                feed_status[name] = {"state": "ok", "count": len(reports), "updated": time.time()}
+            except Exception as e:  # one broken feed must not stop the others
+                feed_status[name] = {**feed_status[name], "state": "error", "error": f"{type(e).__name__}: {e}"[:200]}
+                print(f"{name} feed failed: {e}", flush=True)
+        time.sleep(REFRESH_S)
+
+
 def visible_reports():
     now = time.time()
-    return [r for r in seed if r["t"] <= now] + submitted
+    return [r for r in seed if r["t"] <= now] + [r for rs in list(live.values()) for r in rs] + submitted
 
 
 class ExtractionError(Exception):
@@ -224,7 +246,7 @@ def summarize(g):
         "sources": len({r["source_name"].lower() for r in g}),
         "first_t": g[0]["t"],
         "last_t": g[-1]["t"],
-        "reports": [{k: r[k] for k in ("t", "text", "source_type", "source_name", "red_flags")} for r in g],
+        "reports": [{k: r.get(k) for k in ("t", "text", "source_type", "source_name", "red_flags", "url")} for r in g],
     }
 
 
@@ -244,7 +266,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/":
             return self.send(200, (HERE / "index.html").read_bytes(), "text/html; charset=utf-8")
         if path == "/api/events":
-            return self.send_json(200, {"now": time.time(), "events": cluster(visible_reports())})
+            return self.send_json(200, {"now": time.time(), "events": cluster(visible_reports()), "sources": feed_status,
+                                        "demo": bool(seed), "ai": bool(os.environ.get("ANTHROPIC_API_KEY"))})
         self.send_json(404, {"error": "not found"})
 
     def do_POST(self):
@@ -303,4 +326,5 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     host, port = os.environ.get("HOST", "127.0.0.1"), int(os.environ.get("PORT", "8000"))
     print(f"Weather intelligence prototype on http://{'localhost' if host == '127.0.0.1' else host}:{port}", flush=True)
+    threading.Thread(target=refresh_feeds, daemon=True).start()
     ThreadingHTTPServer((host, port), Handler).serve_forever()
