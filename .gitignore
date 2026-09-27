@@ -1,0 +1,4 @@
+reports.json
+geocache.json
+*.tmp
+__pycache__/

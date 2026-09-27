@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weather Intelligence · India</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root { --bg: #f5f6f8; --panel: #fff; --line: #e2e5ea; --text: #151820; --muted: #636b7a;
+          --ok: #15803d; --warn: #b45309; --bad: #b91c1c; --accent: #1d4ed8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; height: 100vh; display: grid; grid-template-rows: auto 1fr; background: var(--bg); color: var(--text);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; padding: 10px 16px;
+           background: var(--panel); border-bottom: 1px solid var(--line); }
+  h1 { margin: 0; font-size: 16px; letter-spacing: -.01em; }
+  .live { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .live::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); animation: blink 2s infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+  .stats { display: flex; gap: 22px; margin-left: auto; flex-wrap: wrap; }
+  .stat b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 12px; }
+  .stat.ok b { color: var(--ok); } .stat.warn b { color: var(--warn); } .stat.bad b { color: var(--bad); }
+  main { display: grid; grid-template-columns: 390px 1fr; min-height: 0; }
+  aside { display: flex; flex-direction: column; min-height: 0; background: var(--panel); border-right: 1px solid var(--line); }
+  #map { min-height: 0; }
+  details { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; font-weight: 600; }
+  form { display: grid; gap: 8px; margin-top: 10px; }
+  textarea, select, input, button { font: inherit; color: inherit; }
+  textarea, input, select { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  textarea { min-height: 88px; resize: vertical; }
+  textarea:focus, input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  button { padding: 8px 12px; border: 0; border-radius: 6px; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: progress; }
+  #report-out { font-size: 13px; min-height: 1em; margin: 0; }
+  #report-out.ok { color: var(--ok); } #report-out.err { color: var(--bad); }
+  .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .filters select { padding: 5px 7px; font-size: 13px; }
+  #feed { flex: 1; overflow: auto; list-style: none; margin: 0; padding: 0; }
+  #feed li { padding: 10px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  #feed li:hover, #feed li:focus-visible { background: #f1f4f9; outline: none; }
+  #feed li.new { animation: flash 2.5s ease-out; }
+  @keyframes flash { from { background: #fff4c2; } to { background: transparent; } }
+  #feed .empty { color: var(--muted); cursor: default; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .title { font-weight: 600; }
+  .where, .meta { color: var(--muted); font-size: 13px; }
+  .badges { display: flex; gap: 4px; flex-shrink: 0; }
+  .badge { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 99px; white-space: nowrap; }
+  .st-verified { background: #dcfce7; color: var(--ok); }
+  .st-review { background: #fef3c7; color: var(--warn); }
+  .st-misleading { background: #fee2e2; color: var(--bad); }
+  .fc { background: #e0e7ff; color: #3730a3; }
+  .pop { max-height: 340px; overflow: auto; }
+  .pop .why { margin: 6px 0; font-size: 12px; padding: 6px 8px; background: var(--bg); border-radius: 6px; }
+  .timeline { list-style: none; margin: 8px 0 0; padding: 0 0 0 12px; border-left: 2px solid var(--line); }
+  .timeline li { margin: 0 0 8px; }
+  .timeline time { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .timeline .src { color: var(--muted); font-size: 12px; }
+  .timeline p { margin: 2px 0 0; }
+  .timeline .flags { color: var(--bad); font-size: 12px; }
+  .legend { background: #fff; padding: 8px 10px; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.2); font-size: 12px; line-height: 1.8; }
+  .ring { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 3px solid; vertical-align: -2px; margin-right: 6px; }
+  @media (max-width: 760px) {
+    body { height: auto; }
+    main { grid-template-columns: 1fr; }
+    #map { height: 55vh; order: -1; }
+    aside { border-right: 0; }
+    #feed { overflow: visible; }
+    .stats { margin-left: 0; gap: 14px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Weather Intelligence · India</h1>
+  <span class="live" id="updated">connecting…</span>
+  <div class="stats">
+    <div class="stat"><b id="s-reports">–</b><span>Reports</span></div>
+    <div class="stat"><b id="s-dupes">–</b><span>Duplicates merged</span></div>
+    <div class="stat"><b id="s-active">–</b><span>Active events</span></div>
+    <div class="stat ok"><b id="s-verified">–</b><span>Verified</span></div>
+    <div class="stat warn"><b id="s-review">–</b><span>Needs review</span></div>
+    <div class="stat bad"><b id="s-misleading">–</b><span>Likely misleading</span></div>
+  </div>
+</header>
+<main>
+  <aside>
+    <details>
+      <summary>Report a weather event</summary>
+      <form id="report-form">
+        <textarea id="r-text" required minlength="10" maxlength="5000" aria-label="Report text"
+          placeholder="Paste a news headline or post, or describe what you see. e.g. “Road near Baner, Pune completely underwater after 2 hours of rain”"></textarea>
+        <div class="two">
+          <select id="r-source" aria-label="Source type">
+            <option value="citizen">Citizen report</option>
+            <option value="social">Social media</option>
+            <option value="news">News</option>
+          </select>
+          <input id="r-name" maxlength="80" placeholder="Source name (optional)" aria-label="Source name">
+        </div>
+        <button id="r-submit">Analyse &amp; add</button>
+        <p id="report-out" role="status"></p>
+      </form>
+    </details>
+    <div class="filters">
+      <select id="f-type" aria-label="Event type"><option value="">All event types</option></select>
+      <select id="f-state" aria-label="State"><option value="">All states</option></select>
+      <select id="f-status" aria-label="Verification status">
+        <option value="">Any status</option><option value="verified">Verified</option>
+        <option value="review">Needs review</option><option value="misleading">Likely misleading</option>
+      </select>
+      <select id="f-sev" aria-label="Minimum severity">
+        <option value="">Any severity</option><option value="moderate">Moderate +</option>
+        <option value="high">High +</option><option value="extreme">Extreme</option>
+      </select>
+      <select id="f-source" aria-label="Source type">
+        <option value="">Any source</option><option value="official">Official</option><option value="news">News</option>
+        <option value="citizen">Citizen</option><option value="social">Social media</option>
+      </select>
+      <select id="f-window" aria-label="Time window">
+        <option value="">Any time</option><option value="3600">Last hour</option>
+        <option value="21600">Last 6 hours</option><option value="86400">Last 24 hours</option>
+      </select>
+    </div>
+    <ul id="feed" aria-label="Events"></ul>
+  </aside>
+  <div id="map"></div>
+</main>
+<script>
+const TYPES = {
+  "Heavy Rainfall": ["🌧️", "#2563eb"], "Flood": ["🌊", "#1e3a8a"], "Flash Flood": ["🌊", "#312e81"],
+  "Cloudburst": ["☁️", "#4f46e5"], "Thunderstorm": ["⛈️", "#7c3aed"], "Lightning": ["⚡", "#a21caf"],
+  "Hailstorm": ["🧊", "#0891b2"], "Strong Winds": ["💨", "#0d9488"], "Cyclone": ["🌀", "#be185d"],
+  "Dust Storm": ["🌪️", "#a16207"], "Heatwave": ["🔥", "#dc2626"], "Cold Wave": ["❄️", "#0ea5e9"],
+  "Fog": ["🌫️", "#64748b"], "Landslide": ["⛰️", "#78350f"], "Avalanche": ["🏔️", "#475569"],
+  "Drought": ["🏜️", "#d97706"], "Wildfire": ["🔥", "#ea580c"], "Earthquake": ["🏚️", "#57534e"],
+  "Tsunami": ["🌊", "#0369a1"], "Other": ["⚠️", "#6b7280"],
+};
+const STATUS = { verified: ["Verified", "#15803d"], review: ["Needs review", "#b45309"], misleading: ["Likely misleading", "#b91c1c"] };
+const SEV = ["low", "moderate", "high", "extreme"];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+const type = t => TYPES[t] || TYPES.Other;
+const clock = t => new Date(t * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+let events = [], now = Date.now() / 1000, lastJson = "", markers = {}, openId = null;
+const counts = {}, flashUntil = {};
+
+const map = L.map("map", { zoomSnap: 0.5 }).setView([22.8, 80.5], 5);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+}).addTo(map);
+const layer = L.layerGroup().addTo(map);
+const legend = L.control({ position: "bottomright" });
+legend.onAdd = () => Object.assign(L.DomUtil.create("div", "legend"), {
+  innerHTML: Object.values(STATUS).map(([label, c]) => `<div><span class="ring" style="border-color:${c}"></span>${label}</div>`).join("")
+    + `<div><span class="ring" style="border-color:#888;border-style:dashed"></span>Forecast</div><div style="color:#636b7a">Fill = event type · size = reports</div>`,
+});
+legend.addTo(map);
+
+function ago(t) {
+  const m = Math.max(0, Math.round((now - t) / 60));
+  return m < 1 ? "just now" : m < 60 ? `${m}m ago` : `${Math.floor(m / 60)}h ${m % 60}m ago`;
+}
+
+function badges(e) {
+  return `<span class="badges">${e.timing === "forecast" ? '<span class="badge fc">Forecast</span>' : ""}`
+    + `<span class="badge st-${e.status}">${STATUS[e.status][0]}</span></span>`;
+}
+
+function visible() {
+  const f = id => $(id).value;
+  return events.filter(e =>
+    (!f("f-type") || e.event_types.includes(f("f-type"))) &&
+    (!f("f-state") || e.states.includes(f("f-state"))) &&
+    (!f("f-status") || e.status === f("f-status")) &&
+    SEV.indexOf(e.severity) >= SEV.indexOf(f("f-sev") || "low") &&
+    (!f("f-source") || e.source_types.includes(f("f-source"))) &&
+    (!f("f-window") || now - e.last_t <= +f("f-window"))
+  ).sort((a, b) => b.last_t - a.last_t);
+}
+
+function fillSelect(id, values) {
+  const sel = $(id), key = values.join("|");
+  if (sel.dataset.key === key) return;  // don't rebuild (and close) a dropdown the user may have open
+  const cur = sel.value, first = sel.options[0].outerHTML;
+  sel.innerHTML = first + values.map(v => `<option${v === cur ? " selected" : ""}>${esc(v)}</option>`).join("");
+  sel.dataset.key = key;
+}
+
+function popup(e) {
+  return `<div class="pop">
+    <div class="row"><span class="title">${esc(e.event_types.join(", "))}</span>${badges(e)}</div>
+    <div class="where">${esc(e.places.join(", "))}</div>
+    <div class="meta">Severity <b>${esc(e.severity)}</b> · ${plural(e.reports.length, "report")} from ${plural(e.sources, "source")}</div>
+    <div class="why">${esc(e.why)}</div>
+    <ol class="timeline">${e.reports.map(r => `<li>
+      <time>${clock(r.t)}</time> <span class="src">${esc(r.source_type)} · ${esc(r.source_name)}</span>
+      <p>${esc(r.text)}</p>${r.red_flags.length ? `<p class="flags">⚠ ${esc(r.red_flags.join("; "))}</p>` : ""}
+    </li>`).join("")}</ol></div>`;
+}
+
+// Forecast rings are drawn larger, and big markers go underneath, so an observed event and a forecast
+// pinned to the same place (e.g. Gaya) both stay visible and clickable.
+const radius = e => 6 + 3 * Math.sqrt(e.reports.length) + (e.timing === "forecast" ? 6 : 0);
+
+function renderMarkers(list) {
+  const keep = openId;
+  layer.clearLayers();
+  markers = {};
+  for (const e of [...list].sort((a, b) => radius(b) - radius(a))) {
+    if (e.lat == null) continue;
+    markers[e.id] = L.circleMarker([e.lat, e.lon], {
+      radius: radius(e), color: STATUS[e.status][1], weight: 3,
+      fillColor: type(e.event_types[0])[1], fillOpacity: .75, dashArray: e.timing === "forecast" ? "5 4" : null,
+    }).bindPopup(() => popup(e), { maxWidth: 340 })
+      .on("popupopen", () => { openId = e.id; })
+      .on("popupclose", () => { if (openId === e.id) openId = null; })
+      .addTo(layer);
+  }
+  if (keep && markers[keep]) markers[keep].openPopup();
+}
+
+function renderFeed(list) {
+  const t = Date.now(), focused = document.activeElement?.closest("#feed li")?.dataset.id;
+  $("feed").innerHTML = list.length ? list.map(e => `<li tabindex="0" data-id="${esc(e.id)}" class="${flashUntil[e.id] > t ? "new" : ""}">
+      <div class="row"><span class="title">${type(e.event_types[0])[0]} ${esc(e.event_types.join(" · "))}</span>${badges(e)}</div>
+      <div class="where">${e.lat == null ? "📍 location unresolved · " : ""}${esc(e.places.slice(0, 4).join(", "))}${e.places.length > 4 ? "…" : ""}${e.states.length ? " — " + esc(e.states.join(", ")) : ""}</div>
+      <div class="meta">${plural(e.reports.length, "report")} · ${plural(e.sources, "source")} · ${esc(e.severity)} · <span class="ago" data-t="${e.last_t}">${ago(e.last_t)}</span></div>
+    </li>`).join("") : '<li class="empty">No events match these filters.</li>';
+  if (focused) $("feed").querySelector(`li[data-id="${CSS.escape(focused)}"]`)?.focus();  // keep keyboard position
+}
+
+function renderStats() {
+  const n = s => events.filter(e => e.status === s).length;
+  const reports = events.reduce((a, e) => a + e.reports.length, 0);
+  $("s-reports").textContent = reports;
+  $("s-dupes").textContent = reports - events.length;
+  $("s-active").textContent = events.filter(e => e.timing === "observed" && e.status !== "misleading" && now - e.last_t < 86400).length;
+  $("s-verified").textContent = n("verified");
+  $("s-review").textContent = n("review");
+  $("s-misleading").textContent = n("misleading");
+}
+
+// Rebuild the feed and markers only when data or filters change; rebuilding on every poll reset
+// keyboard focus, hover and open popups every 5 seconds.
+function render() {
+  const list = visible();
+  renderFeed(list);
+  renderMarkers(list);
+}
+
+async function poll() {
+  try {
+    const data = await (await fetch("/api/events")).json();
+    now = data.now;
+    const json = JSON.stringify(data.events), changed = json !== lastJson;
+    if (changed) {
+      const first = !lastJson;
+      for (const e of data.events) {
+        if (!first && (counts[e.id] || 0) < e.reports.length) flashUntil[e.id] = Date.now() + 2500;
+        counts[e.id] = e.reports.length;
+      }
+      lastJson = json;
+      events = data.events;
+      fillSelect("f-type", [...new Set(events.flatMap(e => e.event_types))].sort());
+      fillSelect("f-state", [...new Set(events.flatMap(e => e.states))].sort());
+      render();
+    } else {
+      document.querySelectorAll("#feed .ago").forEach(s => { s.textContent = ago(+s.dataset.t); });
+    }
+    renderStats();
+    $("updated").textContent = `Live · updated ${new Date().toLocaleTimeString()}`;
+  } catch {
+    $("updated").textContent = "Connection lost, retrying…";
+  }
+}
+
+document.querySelector(".filters").addEventListener("change", render);
+
+function focusEvent(li) {
+  const e = events.find(x => x.id === li?.dataset.id);
+  if (!e || e.lat == null) return;
+  map.flyTo([e.lat, e.lon], Math.max(map.getZoom(), 9), { duration: .8 });
+  map.once("moveend", () => markers[e.id]?.openPopup());
+}
+$("feed").addEventListener("click", ev => focusEvent(ev.target.closest("li")));
+$("feed").addEventListener("keydown", ev => { if (ev.key === "Enter") focusEvent(ev.target.closest("li")); });
+
+$("report-form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const out = $("report-out"), btn = $("r-submit");
+  btn.disabled = true;
+  out.className = "";
+  out.textContent = "Analysing with Claude…";
+  try {
+    const res = await fetch("/api/reports", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: $("r-text").value, source_type: $("r-source").value, source_name: $("r-name").value }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+    const places = data.places.map(p => p.name + (p.lat == null ? " (not mapped)" : "")).join(", ") || "no place named";
+    out.textContent = `Added: ${data.event_types.join(", ")} · ${data.severity} · ${data.timing} · ${places}`;
+    out.className = "ok";
+    ev.target.reset();
+    poll();
+  } catch (err) {
+    out.textContent = err.message;
+    out.className = "err";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+poll();
+setInterval(poll, 5000);
+</script>
+</body>
+</html>

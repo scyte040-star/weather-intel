@@ -1,0 +1,18 @@
+# Render Blueprint: Dashboard -> New -> Blueprint -> pick this repo.
+services:
+  - type: web
+    name: weather-intel
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    healthCheckPath: /
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: ANTHROPIC_API_KEY
+        sync: false  # Render asks for the value when you create the service; it never goes in the repo
+      - key: DAILY_REPORT_LIMIT
+        value: "100"

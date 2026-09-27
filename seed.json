@@ -1,0 +1,996 @@
+[
+ {
+  "id": "s01",
+  "minutes_ago": 150,
+  "text": "Knee-deep water on SV Road near Andheri station after two hours of non-stop rain. Autos refusing to go.",
+  "source_type": "citizen",
+  "source_name": "citizen-1042",
+  "event_types": [
+   "Heavy Rainfall",
+   "Flood"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Andheri",
+    "level": "locality",
+    "district": "Mumbai Suburban",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 19.1197,
+    "lon": 72.8468
+   }
+  ]
+ },
+ {
+  "id": "s02",
+  "minutes_ago": 138,
+  "text": "LBS Marg at Kurla completely underwater, BEST buses stuck in the water",
+  "source_type": "social",
+  "source_name": "@kurla_updates",
+  "event_types": [
+   "Flood"
+  ],
+  "severity": "high",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Kurla",
+    "level": "locality",
+    "district": "Mumbai Suburban",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 19.0726,
+    "lon": 72.8845
+   }
+  ]
+ },
+ {
+  "id": "s03",
+  "minutes_ago": 125,
+  "text": "Sion circle flooded again, water up to the car doors",
+  "source_type": "citizen",
+  "source_name": "citizen-2210",
+  "event_types": [
+   "Flood"
+  ],
+  "severity": "high",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Sion",
+    "level": "locality",
+    "district": "Mumbai City",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 19.039,
+    "lon": 72.8619
+   }
+  ]
+ },
+ {
+  "id": "s04",
+  "minutes_ago": 110,
+  "text": "Heavy rain lashes Mumbai; waterlogging in Andheri, Kurla and Sion, local trains running 20 minutes late",
+  "source_type": "news",
+  "source_name": "Metro Desk",
+  "event_types": [
+   "Heavy Rainfall",
+   "Flood"
+  ],
+  "severity": "high",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Mumbai",
+    "level": "city",
+    "district": "Mumbai City",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 19.076,
+    "lon": 72.8777
+   },
+   {
+    "name": "Andheri",
+    "level": "locality",
+    "district": "Mumbai Suburban",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 19.1197,
+    "lon": 72.8468
+   },
+   {
+    "name": "Kurla",
+    "level": "locality",
+    "district": "Mumbai Suburban",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 19.0726,
+    "lon": 72.8845
+   },
+   {
+    "name": "Sion",
+    "level": "locality",
+    "district": "Mumbai City",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 19.039,
+    "lon": 72.8619
+   }
+  ]
+ },
+ {
+  "id": "s05",
+  "minutes_ago": 70,
+  "text": "Andheri subway shut, water level still rising",
+  "source_type": "citizen",
+  "source_name": "citizen-0877",
+  "event_types": [
+   "Flood"
+  ],
+  "severity": "high",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Andheri",
+    "level": "locality",
+    "district": "Mumbai Suburban",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 19.1197,
+    "lon": 72.8468
+   }
+  ]
+ },
+ {
+  "id": "s06",
+  "minutes_ago": 40,
+  "text": "Dadar TT circle waterlogged, slow traffic towards Parel",
+  "source_type": "social",
+  "source_name": "@dadar_daily",
+  "event_types": [
+   "Flood"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Dadar",
+    "level": "locality",
+    "district": "Mumbai City",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 19.0178,
+    "lon": 72.8478
+   }
+  ]
+ },
+ {
+  "id": "s07",
+  "minutes_ago": -5,
+  "text": "Kurla station subway also flooded now, avoid",
+  "source_type": "social",
+  "source_name": "@mumbai_rain_watch",
+  "event_types": [
+   "Flood"
+  ],
+  "severity": "high",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Kurla",
+    "level": "locality",
+    "district": "Mumbai Suburban",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 19.0726,
+    "lon": 72.8845
+   }
+  ]
+ },
+ {
+  "id": "s08",
+  "minutes_ago": 12,
+  "text": "Very heavy rain in Kothrud for the last 30 minutes, roads turning into streams",
+  "source_type": "citizen",
+  "source_name": "citizen-3301",
+  "event_types": [
+   "Heavy Rainfall"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Kothrud",
+    "level": "locality",
+    "district": "Pune",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 18.5074,
+    "lon": 73.8077
+   }
+  ]
+ },
+ {
+  "id": "s09",
+  "minutes_ago": -1,
+  "text": "Downpour in Baner too, water collecting near the Baner road junction",
+  "source_type": "citizen",
+  "source_name": "citizen-3518",
+  "event_types": [
+   "Heavy Rainfall",
+   "Flood"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Baner",
+    "level": "locality",
+    "district": "Pune",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 18.559,
+    "lon": 73.7868
+   }
+  ]
+ },
+ {
+  "id": "s10",
+  "minutes_ago": -3,
+  "text": "Shivajinagar observatory recorded 64.5 mm of rainfall in the past two hours. Heavy rainfall spell continuing over Pune city.",
+  "source_type": "official",
+  "source_name": "IMD Pune",
+  "event_types": [
+   "Heavy Rainfall"
+  ],
+  "severity": "high",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Shivajinagar",
+    "level": "locality",
+    "district": "Pune",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 18.5308,
+    "lon": 73.8475
+   },
+   {
+    "name": "Pune",
+    "level": "city",
+    "district": "Pune",
+    "state": "Maharashtra",
+    "country": "India",
+    "lat": 18.5204,
+    "lon": 73.8567
+   }
+  ]
+ },
+ {
+  "id": "s11",
+  "minutes_ago": 45,
+  "text": "Minto Bridge underpass waterlogged again, a car is stuck",
+  "source_type": "citizen",
+  "source_name": "citizen-4120",
+  "event_types": [
+   "Flood"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Minto Bridge",
+    "level": "locality",
+    "district": "New Delhi",
+    "state": "Delhi",
+    "country": "India",
+    "lat": 28.6353,
+    "lon": 77.2254
+   }
+  ]
+ },
+ {
+  "id": "s12",
+  "minutes_ago": -2,
+  "text": "ITO and Minto Road jammed, water on the road after a heavy shower",
+  "source_type": "social",
+  "source_name": "@dilli_commute",
+  "event_types": [
+   "Heavy Rainfall",
+   "Flood"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "ITO",
+    "level": "locality",
+    "district": "Central Delhi",
+    "state": "Delhi",
+    "country": "India",
+    "lat": 28.628,
+    "lon": 77.241
+   },
+   {
+    "name": "Minto Road",
+    "level": "locality",
+    "district": "New Delhi",
+    "state": "Delhi",
+    "country": "India",
+    "lat": 28.634,
+    "lon": 77.227
+   }
+  ]
+ },
+ {
+  "id": "s13",
+  "minutes_ago": -4,
+  "text": "Sudden heavy spell floods central Delhi underpasses; traffic police issue advisory for Minto Bridge and ITO",
+  "source_type": "news",
+  "source_name": "Capital News Network",
+  "event_types": [
+   "Heavy Rainfall",
+   "Flood"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Delhi",
+    "level": "city",
+    "district": "",
+    "state": "Delhi",
+    "country": "India",
+    "lat": 28.6139,
+    "lon": 77.209
+   },
+   {
+    "name": "Minto Bridge",
+    "level": "locality",
+    "district": "New Delhi",
+    "state": "Delhi",
+    "country": "India",
+    "lat": 28.6353,
+    "lon": 77.2254
+   },
+   {
+    "name": "ITO",
+    "level": "locality",
+    "district": "Central Delhi",
+    "state": "Delhi",
+    "country": "India",
+    "lat": 28.628,
+    "lon": 77.241
+   }
+  ]
+ },
+ {
+  "id": "s14",
+  "minutes_ago": 55,
+  "text": "Heavy rain in Velachery since morning, water entering ground-floor homes on 100 Feet Road",
+  "source_type": "citizen",
+  "source_name": "citizen-5582",
+  "event_types": [
+   "Heavy Rainfall",
+   "Flood"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Velachery",
+    "level": "locality",
+    "district": "Chennai",
+    "state": "Tamil Nadu",
+    "country": "India",
+    "lat": 12.9815,
+    "lon": 80.218
+   }
+  ]
+ },
+ {
+  "id": "s15",
+  "minutes_ago": 30,
+  "text": "URGENT!!! Tsunami will hit Chennai tonight at 11 PM, NASA has confirmed. Forward to everyone you know!!!",
+  "source_type": "social",
+  "source_name": "@chennai_forwards",
+  "event_types": [
+   "Tsunami"
+  ],
+  "severity": "extreme",
+  "timing": "forecast",
+  "red_flags": [
+   "chain-message language ('forward to everyone')",
+   "official warning attributed to a non-authoritative source (NASA)",
+   "exact tsunami time with no triggering earthquake mentioned"
+  ],
+  "places": [
+   {
+    "name": "Chennai",
+    "level": "city",
+    "district": "Chennai",
+    "state": "Tamil Nadu",
+    "country": "India",
+    "lat": 13.0827,
+    "lon": 80.2707
+   }
+  ]
+ },
+ {
+  "id": "s16",
+  "minutes_ago": 180,
+  "text": "Depression over west-central Bay of Bengal likely to intensify into a cyclonic storm in the next 24 hours and cross the Odisha coast near Gopalpur. Fishermen advised not to venture into the sea.",
+  "source_type": "official",
+  "source_name": "IMD Bhubaneswar",
+  "event_types": [
+   "Cyclone"
+  ],
+  "severity": "high",
+  "timing": "forecast",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Bay of Bengal",
+    "level": "region",
+    "district": "",
+    "state": "",
+    "country": "India",
+    "lat": null,
+    "lon": null
+   },
+   {
+    "name": "Gopalpur",
+    "level": "city",
+    "district": "Ganjam",
+    "state": "Odisha",
+    "country": "India",
+    "lat": 19.2586,
+    "lon": 84.905
+   },
+   {
+    "name": "Odisha",
+    "level": "state",
+    "district": "",
+    "state": "Odisha",
+    "country": "India",
+    "lat": 20.9517,
+    "lon": 85.0985
+   }
+  ]
+ },
+ {
+  "id": "s17",
+  "minutes_ago": 90,
+  "text": "Odisha on alert as cyclone approaches; evacuation of low-lying areas in Ganjam planned",
+  "source_type": "news",
+  "source_name": "Eastern Times",
+  "event_types": [
+   "Cyclone"
+  ],
+  "severity": "high",
+  "timing": "forecast",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Odisha",
+    "level": "state",
+    "district": "",
+    "state": "Odisha",
+    "country": "India",
+    "lat": 20.9517,
+    "lon": 85.0985
+   },
+   {
+    "name": "Ganjam",
+    "level": "district",
+    "district": "Ganjam",
+    "state": "Odisha",
+    "country": "India",
+    "lat": 19.6,
+    "lon": 84.7
+   }
+  ]
+ },
+ {
+  "id": "s18",
+  "minutes_ago": 300,
+  "text": "Flood situation remains grim: over 1.2 lakh people affected in Dhemaji, Lakhimpur and Majuli districts; 48 relief camps operational.",
+  "source_type": "official",
+  "source_name": "ASDMA",
+  "event_types": [
+   "Flood"
+  ],
+  "severity": "high",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Dhemaji",
+    "level": "district",
+    "district": "Dhemaji",
+    "state": "Assam",
+    "country": "India",
+    "lat": 27.4833,
+    "lon": 94.5833
+   },
+   {
+    "name": "Lakhimpur",
+    "level": "district",
+    "district": "Lakhimpur",
+    "state": "Assam",
+    "country": "India",
+    "lat": 27.2361,
+    "lon": 94.1022
+   },
+   {
+    "name": "Majuli",
+    "level": "district",
+    "district": "Majuli",
+    "state": "Assam",
+    "country": "India",
+    "lat": 26.95,
+    "lon": 94.1667
+   }
+  ]
+ },
+ {
+  "id": "s19",
+  "minutes_ago": 200,
+  "text": "Brahmaputra flowing above danger mark at Neamatighat in Jorhat; embankment breach reported near Majuli",
+  "source_type": "news",
+  "source_name": "Northeast Daily",
+  "event_types": [
+   "Flood"
+  ],
+  "severity": "high",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Neamatighat",
+    "level": "locality",
+    "district": "Jorhat",
+    "state": "Assam",
+    "country": "India",
+    "lat": null,
+    "lon": null
+   },
+   {
+    "name": "Jorhat",
+    "level": "district",
+    "district": "Jorhat",
+    "state": "Assam",
+    "country": "India",
+    "lat": 26.7509,
+    "lon": 94.2037
+   },
+   {
+    "name": "Majuli",
+    "level": "district",
+    "district": "Majuli",
+    "state": "Assam",
+    "country": "India",
+    "lat": 26.95,
+    "lon": 94.1667
+   }
+  ]
+ },
+ {
+  "id": "s20",
+  "minutes_ago": 150,
+  "text": "Water entered our village in Majuli, moving to the relief camp with the cattle",
+  "source_type": "citizen",
+  "source_name": "citizen-6013",
+  "event_types": [
+   "Flood"
+  ],
+  "severity": "high",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Majuli",
+    "level": "district",
+    "district": "Majuli",
+    "state": "Assam",
+    "country": "India",
+    "lat": 26.95,
+    "lon": 94.1667
+   }
+  ]
+ },
+ {
+  "id": "s21",
+  "minutes_ago": 240,
+  "text": "Landslide blocks Badrinath highway near Joshimath; hundreds of pilgrims stranded",
+  "source_type": "news",
+  "source_name": "Hill Post",
+  "event_types": [
+   "Landslide"
+  ],
+  "severity": "high",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Joshimath",
+    "level": "city",
+    "district": "Chamoli",
+    "state": "Uttarakhand",
+    "country": "India",
+    "lat": 30.555,
+    "lon": 79.565
+   },
+   {
+    "name": "Badrinath highway",
+    "level": "region",
+    "district": "Chamoli",
+    "state": "Uttarakhand",
+    "country": "India",
+    "lat": null,
+    "lon": null
+   }
+  ]
+ },
+ {
+  "id": "s22",
+  "minutes_ago": 210,
+  "text": "Stuck near Joshimath, debris all over the road, no movement for 3 hours",
+  "source_type": "social",
+  "source_name": "@char_dham_traveller",
+  "event_types": [
+   "Landslide"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Joshimath",
+    "level": "city",
+    "district": "Chamoli",
+    "state": "Uttarakhand",
+    "country": "India",
+    "lat": 30.555,
+    "lon": 79.565
+   }
+  ]
+ },
+ {
+  "id": "s23",
+  "minutes_ago": 150,
+  "text": "SDRF and BRO teams at the landslide site on NH-7 near Joshimath; clearance under way, one lane expected to open by evening",
+  "source_type": "official",
+  "source_name": "SDRF Uttarakhand",
+  "event_types": [
+   "Landslide"
+  ],
+  "severity": "high",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Joshimath",
+    "level": "city",
+    "district": "Chamoli",
+    "state": "Uttarakhand",
+    "country": "India",
+    "lat": 30.555,
+    "lon": 79.565
+   },
+   {
+    "name": "NH-7",
+    "level": "region",
+    "district": "Chamoli",
+    "state": "Uttarakhand",
+    "country": "India",
+    "lat": null,
+    "lon": null
+   }
+  ]
+ },
+ {
+  "id": "s24",
+  "minutes_ago": 20,
+  "text": "Cloudburst in Shimla, 200 people dead, government is hiding the numbers!! Share before this gets deleted",
+  "source_type": "social",
+  "source_name": "@truth_uncensored_hp",
+  "event_types": [
+   "Cloudburst"
+  ],
+  "severity": "extreme",
+  "timing": "observed",
+  "red_flags": [
+   "unverifiable casualty claim",
+   "conspiracy framing ('government is hiding')",
+   "pressure to share quickly"
+  ],
+  "places": [
+   {
+    "name": "Shimla",
+    "level": "city",
+    "district": "Shimla",
+    "state": "Himachal Pradesh",
+    "country": "India",
+    "lat": 31.1048,
+    "lon": 77.1734
+   }
+  ]
+ },
+ {
+  "id": "s25",
+  "minutes_ago": 100,
+  "text": "Lightning strikes kill six in Gaya and Nalanda districts during evening thunderstorm",
+  "source_type": "news",
+  "source_name": "Bihar Samachar",
+  "event_types": [
+   "Lightning",
+   "Thunderstorm"
+  ],
+  "severity": "extreme",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Gaya",
+    "level": "district",
+    "district": "Gaya",
+    "state": "Bihar",
+    "country": "India",
+    "lat": 24.7955,
+    "lon": 84.9994
+   },
+   {
+    "name": "Nalanda",
+    "level": "district",
+    "district": "Nalanda",
+    "state": "Bihar",
+    "country": "India",
+    "lat": 25.13,
+    "lon": 85.45
+   }
+  ]
+ },
+ {
+  "id": "s26",
+  "minutes_ago": 60,
+  "text": "Orange alert: thunderstorm with lightning very likely over Gaya, Nawada and Nalanda in the next 3 hours",
+  "source_type": "official",
+  "source_name": "IMD Patna",
+  "event_types": [
+   "Thunderstorm",
+   "Lightning"
+  ],
+  "severity": "high",
+  "timing": "forecast",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Gaya",
+    "level": "district",
+    "district": "Gaya",
+    "state": "Bihar",
+    "country": "India",
+    "lat": 24.7955,
+    "lon": 84.9994
+   },
+   {
+    "name": "Nawada",
+    "level": "district",
+    "district": "Nawada",
+    "state": "Bihar",
+    "country": "India",
+    "lat": 24.8867,
+    "lon": 85.5435
+   },
+   {
+    "name": "Nalanda",
+    "level": "district",
+    "district": "Nalanda",
+    "state": "Bihar",
+    "country": "India",
+    "lat": 25.13,
+    "lon": 85.45
+   }
+  ]
+ },
+ {
+  "id": "s27",
+  "minutes_ago": 85,
+  "text": "Squall with winds up to 70 km/h hits Kolkata; trees uprooted in Salt Lake",
+  "source_type": "news",
+  "source_name": "Kolkata Chronicle",
+  "event_types": [
+   "Thunderstorm",
+   "Strong Winds"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Kolkata",
+    "level": "city",
+    "district": "Kolkata",
+    "state": "West Bengal",
+    "country": "India",
+    "lat": 22.5726,
+    "lon": 88.3639
+   },
+   {
+    "name": "Salt Lake",
+    "level": "locality",
+    "district": "North 24 Parganas",
+    "state": "West Bengal",
+    "country": "India",
+    "lat": 22.5867,
+    "lon": 88.4171
+   }
+  ]
+ },
+ {
+  "id": "s28",
+  "minutes_ago": 80,
+  "text": "Huge tree fell on a parked car in Salt Lake Sector 1, wires down",
+  "source_type": "citizen",
+  "source_name": "citizen-7730",
+  "event_types": [
+   "Strong Winds"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Salt Lake",
+    "level": "locality",
+    "district": "North 24 Parganas",
+    "state": "West Bengal",
+    "country": "India",
+    "lat": 22.5867,
+    "lon": 88.4171
+   }
+  ]
+ },
+ {
+  "id": "s29",
+  "minutes_ago": 65,
+  "text": "Continuous rain in Kochi, MG Road waterlogged",
+  "source_type": "citizen",
+  "source_name": "citizen-8104",
+  "event_types": [
+   "Heavy Rainfall",
+   "Flood"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Kochi",
+    "level": "city",
+    "district": "Ernakulam",
+    "state": "Kerala",
+    "country": "India",
+    "lat": 9.9312,
+    "lon": 76.2673
+   },
+   {
+    "name": "MG Road",
+    "level": "locality",
+    "district": "Ernakulam",
+    "state": "Kerala",
+    "country": "India",
+    "lat": 9.97,
+    "lon": 76.285
+   }
+  ]
+ },
+ {
+  "id": "s30",
+  "minutes_ago": 35,
+  "text": "Kaloor and MG Road flooded, avoid the area",
+  "source_type": "social",
+  "source_name": "@kochi_diaries",
+  "event_types": [
+   "Flood"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Kaloor",
+    "level": "locality",
+    "district": "Ernakulam",
+    "state": "Kerala",
+    "country": "India",
+    "lat": 9.997,
+    "lon": 76.299
+   },
+   {
+    "name": "MG Road",
+    "level": "locality",
+    "district": "Ernakulam",
+    "state": "Kerala",
+    "country": "India",
+    "lat": 9.97,
+    "lon": 76.285
+   }
+  ]
+ },
+ {
+  "id": "s31",
+  "minutes_ago": -6,
+  "text": "Heavy rain causes waterlogging across Kochi city; IMD issues yellow alert for Ernakulam",
+  "source_type": "news",
+  "source_name": "Kerala Now",
+  "event_types": [
+   "Heavy Rainfall",
+   "Flood"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Kochi",
+    "level": "city",
+    "district": "Ernakulam",
+    "state": "Kerala",
+    "country": "India",
+    "lat": 9.9312,
+    "lon": 76.2673
+   },
+   {
+    "name": "Ernakulam",
+    "level": "district",
+    "district": "Ernakulam",
+    "state": "Kerala",
+    "country": "India",
+    "lat": 9.9816,
+    "lon": 76.2999
+   }
+  ]
+ },
+ {
+  "id": "s32",
+  "minutes_ago": 130,
+  "text": "Earthquake of magnitude 4.1 occurred 12 km north-east of Chamba, Himachal Pradesh at a depth of 10 km",
+  "source_type": "official",
+  "source_name": "NCS (MoES)",
+  "event_types": [
+   "Earthquake"
+  ],
+  "severity": "moderate",
+  "timing": "observed",
+  "red_flags": [],
+  "places": [
+   {
+    "name": "Chamba",
+    "level": "city",
+    "district": "Chamba",
+    "state": "Himachal Pradesh",
+    "country": "India",
+    "lat": 32.5534,
+    "lon": 76.1258
+   }
+  ]
+ }
+]
