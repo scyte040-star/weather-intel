@@ -4,151 +4,991 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Weather Intelligence · India</title>
+<meta name="description" content="Live weather and disaster alerts for India from IMD, CWC and state authorities, with relief shelters near you and what to do in a flood, cyclone, heatwave or landslide.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://commons.wikimedia.org">
+<link rel="preconnect" href="https://upload.wikimedia.org">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="/static/base.css">
 <style>
-  /* The hero keeps one deep-navy look in both themes, like the sign-in page */
-  .hero { --panel: #e6edf5; position: relative; overflow: hidden; background: #0c1a2b; color: #e6edf5; }
-  .hero::after { content: ""; position: absolute; right: -12%; bottom: -60%; width: 60%; aspect-ratio: 1; border-radius: 50%; pointer-events: none;
-                 background: radial-gradient(circle, color-mix(in srgb, var(--sev-high) 30%, transparent), transparent 65%); }
+  html { scroll-behavior: smooth; scroll-padding-top: 12px; }
+  body { height: auto; }
   .wrap { max-width: 1160px; margin: 0 auto; padding-inline: 16px; }
-  .bar { display: flex; align-items: center; gap: 12px; padding-block: 16px; }
-  .bar .brand h1 { font-size: 20px; }
-  .bar .brand p { color: rgb(230 237 245 / 62%); }
-  .bar .me { margin-left: auto; font-size: 13.5px; color: rgb(230 237 245 / 80%); }
-  .bar .me a { color: #9cc3ff; font-weight: 600; }
-  .lead { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 40px; align-items: end; padding-block: 48px 56px; }
-  .lead h2 { margin: 0 0 14px; font: 600 clamp(32px, 4.4vw, 54px)/1.04 var(--cond); text-wrap: balance; max-width: 16ch; }
-  .lead p { margin: 0; max-width: 52ch; font-size: 16px; color: rgb(230 237 245 / 75%); }
-  .lead .go { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
-  .lead .btn { padding: 11px 18px; font-size: 14.5px; }
-  .lead .btn.ghost { background: transparent; color: #e6edf5; border-color: rgb(230 237 245 / 30%); }
-  .snap { display: grid; gap: 16px; padding: 20px; border: 1px solid rgb(230 237 245 / 14%); border-radius: 14px; background: rgb(255 255 255 / 4%); }
-  .snap .label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: rgb(230 237 245 / 60%); }
-  .nums { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-  .nums b { display: block; font: 600 34px/1 var(--cond); font-variant-numeric: tabular-nums; }
-  .nums span { font-size: 12.5px; color: rgb(230 237 245 / 65%); }
-  .latest { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 13.5px; }
-  .latest li { display: grid; grid-template-columns: 10px 1fr; gap: 10px; align-items: baseline; }
-  .latest li::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); transform: translateY(1px); }
-  .latest small { display: block; color: rgb(230 237 245 / 58%); font-size: 12px; }
+  .kicker { margin: 0 0 6px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  .sec-head { display: grid; gap: 8px; max-width: 64ch; margin-bottom: 24px; }
+  .sec-head h2 { margin: 0; font: 600 clamp(26px, 3vw, 36px)/1.08 var(--cond); text-wrap: balance; }
+  .sec-head .sub { margin: 0; color: var(--muted); font-size: 15px; }
+  .band { padding-block: 56px; }
+  .band.alt { background: var(--panel); border-block: 1px solid var(--line); }
 
-  .doors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding-block: 36px 20px; }
-  .door { position: relative; display: grid; gap: 12px; align-content: start; padding: 22px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
-  .door::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; border-radius: 14px 14px 0 0; background: var(--tone); }
-  .door .kicker { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  /* Photos: a tinted fallback with the hazard's icon shows until (or instead of, if it fails) the image loads */
+  .ph { position: relative; display: block; overflow: hidden;
+        background: linear-gradient(135deg, var(--tone, #1d4f91), color-mix(in srgb, var(--tone, #1d4f91) 45%, #0c1a2b)); }
+  .ph::before { content: attr(data-icon); position: absolute; inset: 0; display: grid; place-items: center; font-size: 44px; opacity: .55; }
+  .ph img, .ph video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .5s, transform .6s; }
+  .ph img.ready, .ph video.ready { opacity: 1; }
+
+  /* Hero: one deep-navy look in both themes, like the sign-in page, over a satellite loop */
+  .hero { --ink: #e6edf5; --ink-2: rgb(230 237 245 / 74%); --ink-3: rgb(230 237 245 / 58%);
+          position: relative; overflow: hidden; background: #0c1a2b; color: var(--ink); isolation: isolate; }
+  .hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; opacity: .85; }
+  .shade { position: absolute; inset: 0; z-index: -1; pointer-events: none;
+           background: linear-gradient(90deg, rgb(12 26 43 / 94%) 0%, rgb(12 26 43 / 78%) 42%, rgb(12 26 43 / 40%) 100%),
+                       linear-gradient(0deg, rgb(8 19 31 / 85%) 0%, transparent 38%); }
+  .hero-in { display: flex; flex-direction: column; min-height: min(760px, 100svh); }
+  .bar { display: flex; align-items: center; gap: 8px 20px; flex-wrap: wrap; padding-block: 16px; }
+  .bar .brand h1 { font-size: 20px; }
+  .bar .brand p { color: var(--ink-3); }
+  .nav { display: flex; gap: 4px 18px; flex-wrap: wrap; margin-left: auto; font-size: 13.5px; }
+  .nav a { color: var(--ink-2); text-decoration: none; font-weight: 500; }
+  .nav a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  .bar .me { width: 100%; text-align: right; font-size: 13px; color: var(--ink-2); }
+  .bar .me a { color: #9cc3ff; font-weight: 600; }
+  .lead { flex: 1; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 40px; align-items: center; padding-block: 32px 40px; }
+  .pulse { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 16px; padding: 4px 12px; border-radius: 99px;
+           background: rgb(212 42 60 / 18%); border: 1px solid rgb(255 141 132 / 35%); font-size: 12.5px; font-weight: 600; }
+  .pulse::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #ff6b6b; animation: blink 2s infinite; }
+  .lead h2 { margin: 0 0 14px; font: 600 clamp(34px, 4.8vw, 58px)/1.02 var(--cond); text-wrap: balance; max-width: 15ch; }
+  .lead > div > p:not(.pulse) { margin: 0; max-width: 52ch; font-size: 16px; color: var(--ink-2); }
+  .go { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 26px; }
+  .hero .btn { padding: 11px 18px; font-size: 14.5px; background: var(--ink); color: #0c1a2b; }
+  .hero .btn.ghost { background: rgb(12 26 43 / 35%); color: var(--ink); border-color: rgb(230 237 245 / 35%); backdrop-filter: blur(4px); }
+
+  .snap { display: grid; gap: 16px; padding: 20px; border: 1px solid rgb(230 237 245 / 16%); border-radius: 14px;
+          background: rgb(8 18 30 / 66%); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .snap-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .snap .label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .snap .when { margin-left: auto; font-size: 12px; color: var(--ink-3); }
+  .nums { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+  .nums b { display: block; font: 600 36px/1 var(--cond); font-variant-numeric: tabular-nums; }
+  .nums span { font-size: 12.5px; color: var(--ink-3); }
+  .sevwrap { position: relative; display: grid; gap: 8px; }
+  .sevbar { display: flex; gap: 2px; height: 12px; }
+  .sevbar button { flex: var(--n) 1 0%; min-width: 8px; padding: 0; border: 0; border-radius: 4px; background: var(--c); cursor: pointer; }
+  .sevbar button.dim { opacity: .35; }
+  .sevbar .none { flex: 1; border-radius: 4px; background: rgb(230 237 245 / 12%); }
+  .sevkey { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 0; padding: 0; list-style: none; }
+  .sevkey button { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid rgb(230 237 245 / 18%); border-radius: 99px;
+                   background: none; color: var(--ink-2); font-size: 12px; cursor: pointer; }
+  .sevkey button::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+  .sevkey button b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .sevkey button[aria-pressed="true"] { background: rgb(230 237 245 / 14%); border-color: rgb(230 237 245 / 45%); color: var(--ink); }
+  .tip { position: absolute; translate: -50% 0; padding: 4px 8px; border-radius: 6px; background: #e6edf5; color: #0c1a2b;
+         font-size: 12px; font-weight: 600; white-space: nowrap; pointer-events: none; }
+  .latest { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: 13.5px; }
+  .latest a { display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: baseline; padding: 6px 8px; margin-inline: -8px;
+              border-radius: 8px; color: inherit; text-decoration: none; }
+  .latest a:hover { background: rgb(230 237 245 / 8%); }
+  .latest a::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); transform: translateY(1px); }
+  .latest small { display: block; color: var(--ink-3); font-size: 12px; }
+  .latest em { font-style: normal; font-size: 12px; color: var(--ink-3); }
+  .latest .empty { color: var(--ink-3); }
+
+  .media-note { display: flex; align-items: center; gap: 10px; padding-block: 0 18px; font-size: 12px; color: var(--ink-3); }
+  .media-note a { color: var(--ink-2); }
+  .vid-btn { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 5px 10px; border: 1px solid rgb(230 237 245 / 30%); border-radius: 99px;
+             background: rgb(12 26 43 / 45%); color: var(--ink); font-size: 12px; font-weight: 600; cursor: pointer; }
+  .vid-btn svg { width: 12px; height: 12px; fill: currentColor; }
+
+  /* Live ticker */
+  .ticker { background: #08131f; color: #e6edf5; border-bottom: 1px solid #1a2a3c; }
+  .tk { display: flex; align-items: center; gap: 12px; height: 46px; }
+  .tk-label { flex: none; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #ff8d84; }
+  .tk-view { flex: 1; min-width: 0; overflow: hidden;
+             -webkit-mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); }
+  .tk-track { display: flex; gap: 28px; width: max-content; margin: 0; padding: 0; list-style: none; animation: tk var(--dur, 60s) linear infinite; }
+  .tk-view:hover .tk-track, .tk-view:focus-within .tk-track, .ticker.paused .tk-track { animation-play-state: paused; }
+  .tk-track a { display: inline-flex; align-items: center; gap: 8px; color: inherit; text-decoration: none; font-size: 13.5px; white-space: nowrap; }
+  .tk-track a:hover b { text-decoration: underline; }
+  .tk-track i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+  .tk-track small { color: rgb(230 237 245 / 55%); }
+  .tk-btn { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid #2a3d52; border-radius: 50%;
+            background: none; color: inherit; cursor: pointer; }
+  .tk-btn svg { width: 11px; height: 11px; fill: currentColor; }
+  @keyframes tk { to { transform: translateX(-50%); } }
+
+  /* Near you */
+  .near { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); grid-template-areas: "side map"; gap: 28px; align-items: start; }
+  .near-side { grid-area: side; display: grid; gap: 16px; }
+  .near-side .sec-head { margin: 0; }
+  .finder { display: grid; gap: 12px; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  .row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+  .row > span { margin-right: 2px; font-weight: 600; }
+  .row button { padding: 4px 10px; border: 1px solid var(--line); border-radius: 99px; background: var(--panel-2); font-size: 12.5px; cursor: pointer; }
+  .row button:hover { border-color: var(--accent); }
+  .row button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .verdict { margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--panel-2); border-left: 4px solid var(--line); font-size: 14px; }
+  .verdict.ok { background: var(--ok-soft); border-color: var(--ok); } .verdict.warn { background: var(--warn-soft); border-color: var(--warn); }
+  .verdict.bad { background: var(--bad-soft); border-color: var(--bad); }
+  .near-lists { display: grid; gap: 16px; }
+  .near-lists h3 { margin: 0 0 6px; font: 600 16px/1.2 var(--cond); }
+  .nlist { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .nlist .it { display: grid; grid-template-columns: 10px 1fr auto; gap: 4px 10px; align-items: baseline; width: 100%; padding: 9px 12px;
+               background: var(--panel); border: 1px solid var(--line); border-radius: 10px; text-align: left; text-decoration: none; color: inherit; cursor: pointer; }
+  .nlist .it:hover { border-color: var(--accent); }
+  .nlist .it::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--a)); transform: translateY(1px); }
+  .nlist .it small, .nlist .it .meter { grid-column: 2 / -1; }
+  .nlist .it small { color: var(--muted); font-size: 12.5px; }
+  .nlist .d { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .nlist .empty { padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; color: var(--muted); font-size: 13.5px; }
+  .more { font-weight: 600; font-size: 14px; }
+  .near-map { grid-area: map; position: sticky; top: 16px; display: grid; gap: 8px; }
+  #mini-map { height: 560px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel-2); z-index: 0; }
+  .map-note { font-size: 12.5px; color: var(--muted); }
+  @media (prefers-color-scheme: dark) {
+    #mini-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.82) contrast(.92) saturate(.55); }
+  }
+  .leaflet-tooltip, .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--text); border-color: var(--line); box-shadow: var(--shadow); }
+  .leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+  .leaflet-bar a { background: var(--panel); color: var(--text); border-color: var(--line); }
+  .leaflet-container .leaflet-control-attribution { background: color-mix(in srgb, var(--panel) 85%, transparent); color: var(--muted); }
+  .leaflet-container .leaflet-control-attribution a, .leaflet-popup-content a { color: var(--accent); }
+
+  /* Hazard gallery */
+  .hz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+  .hz { display: grid; padding: 0; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+        text-align: left; cursor: pointer; box-shadow: var(--shadow); transition: transform .2s, border-color .2s; }
+  .hz:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--tone) 60%, var(--line)); }
+  .hz:hover .ph img { transform: scale(1.05); }
+  .hz .ph { aspect-ratio: 3 / 2; }
+  .hz .ph::after { content: ""; position: absolute; inset: 40% 0 0; background: linear-gradient(transparent, rgb(8 18 30 / 85%)); }
+  .hz-over { position: absolute; inset: auto 0 0; z-index: 1; display: flex; align-items: end; justify-content: space-between; gap: 10px; padding: 14px 16px; color: #fff; }
+  .hz-name { font: 600 21px/1.1 var(--cond); text-shadow: 0 1px 8px rgb(0 0 0 / 50%); }
+  .badge { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 3px 9px; border-radius: 99px; background: rgb(8 18 30 / 72%);
+           font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c, #7b8794); }
+  .vid-tag { position: absolute; top: 12px; left: 12px; z-index: 1; display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 99px;
+             background: rgb(8 18 30 / 72%); color: #fff; font-size: 11.5px; font-weight: 600; }
+  .vid-tag svg { width: 9px; height: 9px; fill: currentColor; }
+  .hz-foot { display: grid; gap: 6px; padding: 14px 16px 16px; font-size: 13.5px; }
+  .hz-foot .line { color: var(--muted); }
+  .hz-foot .cta { color: var(--accent); font-weight: 600; }
+
+  dialog.hz-dlg { width: min(1040px, calc(100% - 24px)); max-height: calc(100dvh - 24px); padding: 0; overflow: auto; }
+  .hz-body { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  .hz-media { margin: 0; display: flex; flex-direction: column; background: #0c1a2b; }
+  .hz-media .ph { flex: 1; min-height: 320px; }
+  .hz-media video.ready { object-fit: contain; background: #000; }
+  .hz-media figcaption { padding: 10px 14px; color: rgb(230 237 245 / 70%); font-size: 12.5px; }
+  .hz-media figcaption a { color: #9cc3ff; }
+  .hz-text { display: grid; gap: 14px; align-content: start; padding: 22px; }
+  .hz-top { display: flex; align-items: center; gap: 8px; }
+  .hz-top .kicker { margin: 0; }
+  .x { margin-left: auto; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 50%; background: var(--panel-2); font-size: 18px; line-height: 1; cursor: pointer; }
+  .hz-text h2 { margin: 0; font: 600 28px/1.1 var(--cond); }
+  .hz-text > p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .hz-live { display: grid; gap: 6px; padding: 12px; border-radius: 10px; background: var(--panel-2); font-size: 13.5px; }
+  .hz-live b { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .hz-live ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+  .hz-live a { display: flex; gap: 8px; align-items: baseline; color: inherit; text-decoration: none; }
+  .hz-live a:hover span { text-decoration: underline; }
+  .hz-live a::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+  .tabs { display: flex; gap: 4px; padding: 3px; border-radius: 9px; background: var(--panel-2); }
+  .tabs button { flex: 1; padding: 6px 8px; border: 0; border-radius: 7px; background: none; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--panel); color: var(--text); box-shadow: var(--shadow); }
+  .tips { display: grid; gap: 8px; margin: 0; padding-left: 20px; font-size: 14px; }
+  .hz-acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .hz-acts .push { margin-left: auto; }
+
+  /* How it works */
+  .steps { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 0 0 18px; padding: 0; list-style: none; }
+  .steps::before { content: ""; position: absolute; top: 19px; left: 8%; right: 8%; height: 2px; background: var(--line); }
+  .steps button { position: relative; display: grid; justify-items: center; gap: 8px; width: 100%; padding: 0 4px; border: 0; background: none;
+                  text-align: center; font-size: 13.5px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .steps button i { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--panel); border: 2px solid var(--line);
+                    font: 600 16px var(--cond); font-style: normal; color: var(--text); transition: background .2s, border-color .2s; }
+  .steps button.done i { border-color: var(--accent); }
+  .steps button[aria-selected="true"] { color: var(--text); }
+  .steps button[aria-selected="true"] i { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .step-panel { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; padding: 24px; background: var(--panel);
+                border: 1px solid var(--line); border-radius: 14px; }
+  .step-panel h3 { margin: 0 0 8px; font: 600 22px/1.15 var(--cond); }
+  .step-panel p { margin: 0; color: var(--muted); font-size: 15px; }
+  .fact { display: grid; gap: 8px; align-content: start; padding: 14px; border-radius: 10px; background: var(--panel-2); font-size: 13.5px; }
+  .fact > b { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .fact .big { font: 600 30px/1 var(--cond); font-variant-numeric: tabular-nums; }
+  .step-nav { display: flex; gap: 8px; margin-top: 16px; }
+
+  /* Emergency numbers */
+  .sos { background: var(--bad-soft); border-block: 1px solid color-mix(in srgb, var(--bad) 30%, transparent); }
+  .sos-in { display: flex; align-items: center; gap: 10px 28px; flex-wrap: wrap; padding-block: 16px; }
+  .sos p { margin: 0; font: 600 20px/1.2 var(--cond); color: var(--bad); }
+  .sos a { color: inherit; }
+  .sos ul { display: flex; gap: 6px 22px; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; font-size: 13.5px; }
+  .sos li a { font-weight: 700; font-variant-numeric: tabular-nums; margin-right: 6px; }
+
+  /* Sign-in doors */
+  .doors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .door { position: relative; display: grid; grid-template-rows: auto 1fr; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+  .door::before { content: ""; position: absolute; inset: 0 0 auto 0; z-index: 1; height: 4px; background: var(--tone); }
+  .door .ph { aspect-ratio: 16 / 7; }
+  .door-body { display: grid; gap: 12px; align-content: start; padding: 20px 22px 22px; }
+  .door .kicker { margin: 0; color: var(--muted); }
   .door h3 { margin: 0; font: 600 22px/1.15 var(--cond); }
   .door p { margin: 0; color: var(--muted); font-size: 14px; }
   .door ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13.5px; display: grid; gap: 4px; }
   .door .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
   .door.public { --tone: var(--accent); } .door.shelters { --tone: #2e9e5b; } .door.control { --tone: var(--sev-high); }
-  .foot { padding-block: 20px 40px; color: var(--muted); font-size: 12.5px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .foot { display: grid; gap: 8px; padding-block: 24px 40px; color: var(--muted); font-size: 12.5px; }
+  .foot .line { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .foot a { color: inherit; }
+
+  /* Sections ease in as they scroll into view (only when motion is welcome) */
+  .anim .reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s, transform .6s; }
+  .anim .reveal.in { opacity: 1; transform: none; }
+  @media print { .anim .reveal { opacity: 1; transform: none; } }
+
   @media (max-width: 900px) {
-    .lead { grid-template-columns: 1fr; gap: 28px; padding-block: 28px 36px; }
+    .lead { grid-template-columns: 1fr; gap: 28px; padding-block: 16px 28px; }
+    .hero-in { min-height: 0; }
+    .near { grid-template-columns: 1fr; grid-template-areas: "side" "map"; }
+    .near-map { position: static; }
+    #mini-map { height: 380px; }
     .doors { grid-template-columns: 1fr; }
+    .hz-body, .step-panel { grid-template-columns: 1fr; }
+    .hz-media .ph { flex: none; min-height: 0; aspect-ratio: 16 / 10; }
+    .steps { grid-template-columns: 1fr; gap: 4px; }
+    .steps::before { top: 8px; bottom: 8px; left: 19px; right: auto; width: 2px; height: auto; }
+    .steps button { grid-template-columns: 40px 1fr; justify-items: start; align-items: center; gap: 12px; padding: 4px 0; text-align: left; }
+  }
+  @media (max-width: 640px) {
+    .nav a.opt { display: none; }
+    .band { padding-block: 40px; }
+    .nums b { font-size: 30px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .tk-view { overflow-x: auto; -webkit-mask-image: none; mask-image: none; }
+    .tk-btn { display: none; }
   }
 </style>
 </head>
 <body>
-<section class="hero">
-  <div class="wrap">
+<header class="hero" id="top">
+  <video class="hero-video" id="hero-video" muted loop playsinline preload="none" disablepictureinpicture disableremoteplayback aria-hidden="true" tabindex="-1"></video>
+  <div class="shade" aria-hidden="true"></div>
+  <div class="wrap hero-in">
     <div class="bar">
       <a class="brand" href="/"><h1>Weather Intelligence · India</h1><p>Live hazard alerts, shelters and response</p></a>
+      <nav class="nav" aria-label="On this page">
+        <a href="/map">Live map</a>
+        <a class="opt" href="#near">Near you</a>
+        <a class="opt" href="#hazards">Hazards</a>
+        <a class="opt" href="#how">How it works</a>
+        <a href="#choose">Sign in</a>
+      </nav>
       <span class="me" id="me" hidden></span>
     </div>
     <div class="lead">
       <div>
+        <p class="pulse" id="pulse">Live alerts for India</p>
         <h2>India's weather alerts, shelters and response in one place.</h2>
         <p>Official warnings from IMD, CWC and state disaster authorities, grouped into events and mapped as they happen, with relief shelters and the space they have left, and a control room that checks everything is in place.</p>
         <div class="go">
           <a class="btn" href="/map">Open the live map</a>
+          <a class="btn ghost" href="#near">Check your area</a>
           <a class="btn ghost" href="#choose">Sign in</a>
         </div>
       </div>
-      <div class="snap" aria-live="polite">
-        <div class="label">Right now</div>
+      <div class="snap">
+        <div class="snap-top"><span class="label">Right now</span><span class="chip sample" id="demo-chip" hidden>Includes sample data</span><span class="when" id="when"></span></div>
         <div class="nums">
           <div><b id="n-events">–</b><span>active events</span></div>
           <div><b id="n-severe">–</b><span>severe or worse</span></div>
           <div><b id="n-shelters">–</b><span>shelters open</span></div>
           <div><b id="n-free">–</b><span>shelter places free</span></div>
         </div>
+        <div class="sevwrap">
+          <span class="label">By IMD warning level · tap to filter</span>
+          <div class="sevbar" id="sevbar" role="group" aria-label="Active events by warning level"><span class="none"></span></div>
+          <ul class="sevkey" id="sevkey"></ul>
+          <span class="tip" id="sev-tip" hidden></span>
+        </div>
         <ul class="latest" id="latest"></ul>
       </div>
     </div>
+    <div class="media-note">
+      <button class="vid-btn" id="vid-toggle" type="button" hidden></button>
+      <span id="vid-cap"></span>
+    </div>
+  </div>
+</header>
+
+<section class="ticker" id="ticker" aria-label="Latest alerts">
+  <div class="wrap tk">
+    <span class="tk-label">Live alerts</span>
+    <div class="tk-view"><ul class="tk-track" id="tk-track"><li><small>Fetching live alerts…</small></li></ul></div>
+    <button class="tk-btn" id="tk-toggle" type="button" aria-pressed="false" aria-label="Pause the alert ticker"></button>
   </div>
 </section>
 
-<main class="wrap">
-  <section class="doors" id="choose" aria-label="Choose how to sign in">
-    <article class="door public">
-      <div class="kicker">For everyone</div>
-      <h3>Public</h3>
-      <p>See what's happening near you. No account needed for the map.</p>
-      <ul><li>Live alerts, filters and event timelines</li><li>Find an open shelter nearby</li><li>With an account: report events and get alerts for your area</li></ul>
-      <div class="acts">
-        <a class="btn" href="/map">Open the live map</a>
-        <a class="btn ghost" href="/login?next=/map">Sign in</a>
-        <a class="btn ghost" href="/signup?next=/map">Create account</a>
+<main>
+  <section class="band" id="near" aria-labelledby="near-h">
+    <div class="wrap near">
+      <div class="near-side reveal">
+        <div class="sec-head">
+          <p class="kicker">Near you</p>
+          <h2 id="near-h">What's happening near you?</h2>
+          <p class="sub">Choose a place to see active alerts around it and the nearest open shelters with space. Your location stays in your browser.</p>
+        </div>
+        <div class="finder">
+          <div class="picker" id="n-picker"></div>
+          <div class="row" id="quick"><span>Try</span></div>
+          <div class="row" id="radius" role="group" aria-label="How far to look"><span>Within</span></div>
+        </div>
+        <p class="verdict" id="verdict" aria-live="polite">Choose a place to see alerts and shelters near it.</p>
+        <div class="near-lists" id="near-lists" hidden>
+          <div><h3 id="ne-h">Alerts</h3><ul class="nlist" id="near-events"></ul></div>
+          <div><h3 id="ns-h">Open shelters</h3><ul class="nlist" id="near-shelters"></ul></div>
+          <a class="more" id="near-link" href="/map">Open this area on the live map →</a>
+        </div>
       </div>
-    </article>
-    <article class="door shelters">
-      <div class="kicker">For relief shelters</div>
-      <h3>Shelter operators</h3>
-      <p>Keep your shelter's status up to date so people know where to go.</p>
-      <ul><li>Open or closed, and people staying, in one tap</li><li>Facilities you provide</li><li>Funds and supplies you need</li></ul>
-      <div class="acts">
-        <a class="btn" href="/login?as=shelter&amp;next=/shelter">Shelter login</a>
-        <a class="btn ghost" href="/signup?as=shelter&amp;next=/shelter">Register a shelter</a>
+      <div class="near-map reveal" id="near-map">
+        <div id="mini-map" role="region" aria-label="Map of alerts and shelters"></div>
+        <span class="map-note">Dots are alerts, coloured by warning level; 🏠 marks are shelters. The page scrolls freely: zoom with the + and − buttons.</span>
       </div>
-    </article>
-    <article class="door control">
-      <div class="kicker">For administrators</div>
-      <h3>Control room</h3>
-      <p>Check that everything is in place, and act on what isn't.</p>
-      <ul><li>Readiness checks and shelter coverage</li><li>Approve shelters and review reports</li><li>Manage users and data sources</li></ul>
-      <div class="acts">
-        <a class="btn" href="/login?as=control&amp;next=/control">Control room login</a>
-      </div>
-    </article>
+    </div>
   </section>
-  <div class="foot"><span>Data: NDMA SACHET (IMD, CWC, state SDMAs), GDACS, USGS, Open-Meteo, OpenStreetMap</span><span id="updated"></span></div>
+
+  <section class="band alt" id="hazards" aria-labelledby="hz-h">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <p class="kicker">Hazards</p>
+        <h2 id="hz-h">The hazards we track</h2>
+        <p class="sub">Tap one to see where it's active right now and what to do before, during and after.</p>
+      </div>
+      <div class="hz-grid reveal" id="hz-grid"></div>
+    </div>
+  </section>
+
+  <section class="band" id="how" aria-labelledby="how-h">
+    <div class="wrap reveal">
+      <div class="sec-head">
+        <p class="kicker">How it works</p>
+        <h2 id="how-h">From a warning to a shelter bed</h2>
+        <p class="sub">Every alert on the map goes through the same six steps. Pick one to see what happens, with live numbers from this server.</p>
+      </div>
+      <ol class="steps" id="steps" role="tablist" aria-label="Steps"></ol>
+      <div class="step-panel" id="step-panel" role="tabpanel"></div>
+    </div>
+  </section>
+
+  <section class="sos" aria-label="Emergency numbers">
+    <div class="wrap sos-in">
+      <p>In an emergency, call <a href="tel:112">112</a></p>
+      <ul>
+        <li><a href="tel:108">108</a>Ambulance</li>
+        <li><a href="tel:1070">1070</a>State disaster control room</li>
+        <li><a href="tel:1077">1077</a>District control room</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="band" id="choose" aria-label="Choose how to sign in">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <p class="kicker">Sign in</p>
+        <h2>One platform, three ways in</h2>
+      </div>
+      <div class="doors reveal">
+        <article class="door public">
+          <div class="ph" data-icon="🗺️"><img data-file="Dark clouds, Monsoon, India (2018) 1.jpg" alt="Dark monsoon clouds gathering over India" sizes="(max-width: 900px) 100vw, 380px"></div>
+          <div class="door-body">
+            <div class="kicker">For everyone</div>
+            <h3>Public</h3>
+            <p>See what's happening near you. No account needed for the map.</p>
+            <ul><li>Live alerts, filters and event timelines</li><li>Find an open shelter nearby</li><li>With an account: report events and get alerts for your area</li></ul>
+            <div class="acts">
+              <a class="btn" href="/map">Open the live map</a>
+              <a class="btn ghost" href="/login?next=/map">Sign in</a>
+              <a class="btn ghost" href="/signup?next=/map">Create account</a>
+            </div>
+          </div>
+        </article>
+        <article class="door shelters">
+          <div class="ph" data-icon="🏠"><img data-file="Armed forces personnel dropping the therapeutic food packets in the flood affected areas of Srinagar, on September 10, 2014.jpg" alt="Armed forces personnel handing out food packets in flood-hit Srinagar, 2014" sizes="(max-width: 900px) 100vw, 380px"></div>
+          <div class="door-body">
+            <div class="kicker">For relief shelters</div>
+            <h3>Shelter operators</h3>
+            <p>Keep your shelter's status up to date so people know where to go.</p>
+            <ul><li>Open or closed, and people staying, in one tap</li><li>Facilities you provide</li><li>Funds and supplies you need</li></ul>
+            <div class="acts">
+              <a class="btn" href="/login?as=shelter&amp;next=/shelter">Shelter login</a>
+              <a class="btn ghost" href="/signup?as=shelter&amp;next=/shelter">Register a shelter</a>
+            </div>
+          </div>
+        </article>
+        <article class="door control">
+          <div class="ph" data-icon="🛰️"><img data-file="The National Disaster Response Force (NDRF) rescue operations in flood-hit areas of Jammu &amp; Kashmir on September 11, 2014.jpg" alt="NDRF rescue operations in flood-hit Jammu and Kashmir, 2014" sizes="(max-width: 900px) 100vw, 380px"></div>
+          <div class="door-body">
+            <div class="kicker">For administrators</div>
+            <h3>Control room</h3>
+            <p>Check that everything is in place, and act on what isn't.</p>
+            <ul><li>Readiness checks and shelter coverage</li><li>Approve shelters and review reports</li><li>Manage users and data sources</li></ul>
+            <div class="acts">
+              <a class="btn" href="/login?as=control&amp;next=/control">Control room login</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <footer class="wrap foot">
+    <div class="line"><span>Data: NDMA SACHET (IMD, CWC, state SDMAs), GDACS, USGS, Open-Meteo, OpenStreetMap</span><span id="updated"></span></div>
+    <div id="credits"></div>
+  </footer>
 </main>
 
+<dialog class="hz-dlg" id="hz-dlg" aria-labelledby="hz-title">
+  <div class="hz-body">
+    <figure class="hz-media"><div class="ph" id="hz-frame"></div><figcaption id="hz-cap"></figcaption></figure>
+    <div class="hz-text">
+      <div class="hz-top"><span class="kicker" id="hz-pos"></span><button class="x" type="button" id="hz-close" aria-label="Close" autofocus>×</button></div>
+      <h2 id="hz-title"></h2>
+      <p id="hz-about"></p>
+      <div class="hz-live" id="hz-live"></div>
+      <div class="tabs" role="tablist" aria-label="What to do" id="hz-tabs">
+        <button type="button" role="tab" id="tab-before" data-when="before" aria-controls="hz-tips">Before</button>
+        <button type="button" role="tab" id="tab-during" data-when="during" aria-controls="hz-tips">During</button>
+        <button type="button" role="tab" id="tab-after" data-when="after" aria-controls="hz-tips">After</button>
+      </div>
+      <ul class="tips" id="hz-tips" role="tabpanel"></ul>
+      <div class="hz-acts">
+        <a class="btn" id="hz-map" href="/map">See on the live map</a>
+        <button class="btn ghost push" type="button" id="hz-prev" aria-label="Previous hazard">← Prev</button>
+        <button class="btn ghost" type="button" id="hz-next" aria-label="Next hazard">Next →</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="/static/picker.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const SEV = ["low", "moderate", "high", "extreme"];
+const SEV_LABEL = { low: "Minor", moderate: "Moderate", high: "Severe", extreme: "Extreme" };
+const IMD_COLOUR = { low: "green", moderate: "yellow", high: "orange", extreme: "red" };
 const HOME = { user: ["/map", "the live map"], shelter: ["/shelter", "my shelters"], admin: ["/control", "the control room"] };
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const saveData = Boolean(navigator.connection && navigator.connection.saveData);
+const num = n => Number(n).toLocaleString("en-IN");
+const plural = (n, word) => `${num(n)} ${word}${n === 1 ? "" : "s"}`;
+const sevOf = e => SEV.indexOf(e.severity);
+const bySeverity = (a, b) => sevOf(b) - sevOf(a) || b.last_t - a.last_t;
+const where = e => (e.places[0] || "") + (e.states.length && !e.places.join(", ").includes(e.states[0]) ? `, ${e.states[0]}` : "");
+const mapAt = (p, z = 9) => p.lat == null ? "/map" : `/map?at=${p.lat.toFixed(3)},${p.lon.toFixed(3)}&z=${z}`;
+const avail = s => !s.active ? "closed" : s.occupancy >= s.capacity ? "full" : s.occupancy >= 0.75 * s.capacity ? "nearly" : "space";
+const free = s => Math.max(0, s.capacity - s.occupancy);
+const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+                set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+function km(a, b) {
+  const r = Math.PI / 180, h = Math.sin((b.lat - a.lat) * r / 2) ** 2
+    + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h));
+}
+const ICON = { play: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1l9 5-9 5z"/></svg>',
+               pause: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1h3v10H2zM7 1h3v10H7z"/></svg>' };
 
+// --- Media, all from Wikimedia Commons: change a file name here to swap a photo. Each file's page lists its author and licence.
+const COMMONS = "https://commons.wikimedia.org/wiki/", UPLOAD = "https://upload.wikimedia.org/wikipedia/commons/";
+const photo = (file, w) => `${COMMONS}Special:FilePath/${encodeURIComponent(file)}?width=${w}`;  // redirects to a thumbnail, or the original if smaller
+const srcset = file => [500, 960, 1920].map(w => `${photo(file, w)} ${w}w`).join(", ");
+const filePage = file => `${COMMONS}File:${encodeURIComponent(file.replaceAll(" ", "_"))}`;
+const VIDEO = {
+  file: "Cyclone Michaung Grows and Approaches Eastern India (CIRA 2023-12-04 - labels).webm",
+  dir: "6/63",  // Commons keeps each file under the first hex digits of md5(file name)
+  caption: "Cyclone Michaung nearing Chennai, 2–4 December 2023",
+  credit: "CIRA / Colorado State University",
+};
+const vname = VIDEO.file.replaceAll(" ", "_");
+const videoPoster = `${UPLOAD}thumb/${VIDEO.dir}/${vname}/1280px--${vname}.jpg`;
+const videoSources = small => [...(small ? ["480p", "360p"] : ["720p", "480p"]).map(q => `${UPLOAD}transcoded/${VIDEO.dir}/${vname}/${vname}.${q}.vp9.webm`),
+                               `${UPLOAD}${VIDEO.dir}/${vname}`];
+
+const HAZARDS = [
+  { name: "Floods", icon: "🌊", tone: "#1d6fb8", types: ["Flood", "Flash Flood"],
+    file: "Manimala river during 2018 Kerala floods @ Pazhayidom, Kanjirappally.jpg",
+    caption: "The Manimala river in spate at Pazhayidom, Kottayam, during the 2018 Kerala floods",
+    line: "River floods and flash floods, from CWC river forecasts and state warnings.",
+    about: "Most flood damage in India comes in the June–September monsoon, when the Brahmaputra, the Ganga and their tributaries burst their banks. The Central Water Commission forecasts river levels days ahead; flash floods can arrive within hours of intense rain.",
+    tips: { before: ["Know your nearest shelter and a route to higher ground.", "Keep documents, medicines, a torch, drinking water and a charged phone in a waterproof bag.", "Move valuables, grain and fodder to a higher shelf or floor."],
+            during: ["Move to higher ground as soon as you're told to.", "Don't walk, swim or drive through floodwater: even shallow moving water can knock you over or sweep a car away.", "Switch off electricity at the mains and keep away from power lines."],
+            after: ["Drink only boiled, filtered or chlorinated water.", "Don't go back into a flooded building until it has been declared safe.", "Watch for snakes, broken glass and damaged wiring as the water drops."] } },
+  { name: "Heavy rain & cloudbursts", icon: "🌧️", tone: "#3f6fa0", types: ["Heavy Rainfall", "Rain", "Cloudburst"],
+    file: "Mumbai india monsoon clouds.jpg",
+    caption: "Monsoon clouds over Mumbai",
+    line: "IMD's yellow, orange and red rainfall warnings, district by district.",
+    about: "IMD calls 64.5–115.5 mm of rain in 24 hours heavy, 115.6–204.4 mm very heavy, and anything more extremely heavy. A cloudburst, 100 mm or more in an hour over a small area, is most common in the Himalaya and can set off flash floods and landslides.",
+    tips: { before: ["Check IMD's warning colour for your district before you travel.", "Clear drains and gutters around your home.", "Keep an emergency kit ready, with a torch, power bank and first-aid supplies."],
+            during: ["Stay indoors if you can; avoid underpasses, low bridges and waterlogged roads.", "Keep away from open drains, manholes and fallen power lines.", "In the hills, stay away from streams and steep slopes."],
+            after: ["Report blocked roads, fallen trees and broken power lines.", "Don't touch electrical fittings with wet hands.", "Watch for new cracks in slopes and walls: landslides can follow heavy rain."] } },
+  { name: "Cyclones", icon: "🌀", tone: "#5b4fb0", types: ["Cyclone"], video: true,
+    caption: VIDEO.caption,
+    line: "Bay of Bengal and Arabian Sea storms, tracked from formation to landfall.",
+    about: "Cyclones form over the Bay of Bengal and the Arabian Sea, mostly in April–June and October–December. IMD's Regional Specialised Meteorological Centre in New Delhi tracks each one and issues warnings days before landfall.",
+    tips: { before: ["Follow IMD cyclone bulletins and leave early if you're told to evacuate.", "Tie down or bring in loose objects: tin sheets, pots and signboards become missiles in high wind.", "Store drinking water, dry food, medicines and important papers."],
+            during: ["Stay indoors, away from windows, and switch off electricity and gas.", "If the wind suddenly drops, stay put: it may be the eye passing, and the wind will return from the other side.", "Don't go out to sea or down to the beach."],
+            after: ["Wait for an official all-clear before going outside.", "Keep away from fallen power lines, damaged buildings and floodwater.", "Use the route home that officials say is safe."] } },
+  { name: "Landslides", icon: "⛰️", tone: "#8a5a2b", types: ["Landslide", "Avalanche"],
+    file: "Mundakkai, Chooralmala, Wayanad Landslide rescue team.jpg",
+    caption: "A rescue team at Mundakkai and Chooralmala after the 2024 Wayanad landslides",
+    line: "Hill slopes in the Himalaya, Western Ghats and the North-East after heavy rain.",
+    about: "Landslides strike the Himalaya, the Western Ghats and the North-East hardest, usually after days of heavy rain. The Geological Survey of India maps landslide-prone slopes, and a burst of intense rain on soaked ground is the most common trigger.",
+    tips: { before: ["Watch for new cracks in the ground or walls, tilting trees and poles, and doors that start to jam.", "Notice sudden changes in streams: water turning muddy, or rising or falling fast.", "Know a safe route away from steep slopes and valley floors."],
+            during: ["Move out of the path of the slide quickly, across the slope rather than down it.", "Listen for rumbling, cracking trees or boulders knocking together.", "Stay away from river banks and valleys below the slope."],
+            after: ["Stay away from the slide area: more slides can follow.", "Look for injured or trapped people nearby without entering the slide, and call for help.", "Report broken power, water and gas lines."] } },
+  { name: "Heatwaves", icon: "🔥", tone: "#c2410c", types: ["Heatwave"],
+    file: "India Summer 2013.jpg",
+    caption: "Summer in India, 2013",
+    line: "IMD heatwave and severe heatwave warnings for the plains, coasts and hills.",
+    about: "IMD declares a heatwave when the day's maximum is at least 40 °C in the plains and 4.5 °C or more above normal, or when it reaches 45 °C whatever the normal. Most heatwaves come between March and June, and nights that stay hot make them more dangerous.",
+    tips: { before: ["Plan outdoor work for early morning or evening.", "Learn the signs of heat stroke: confusion, hot dry skin, a fast pulse, fainting.", "Check on elderly neighbours, young children and people who work outdoors."],
+            during: ["Drink water often, even if you aren't thirsty; ORS, lassi, buttermilk and lemon water help too.", "Stay out of the sun between noon and 3 pm; wear light, loose cotton and cover your head.", "Never leave children or animals in a parked vehicle."],
+            after: ["Heat stroke is an emergency: move the person to shade, cool them with water and call 112.", "Keep drinking through the evening: heat stress builds up over several days.", "Keep your home cool: shade windows by day and open them at night."] } },
+  { name: "Thunderstorms & lightning", icon: "⛈️", tone: "#334e7a", types: ["Thunderstorm", "Lightning", "Hailstorm", "Dust Storm", "Strong Winds"],
+    file: "ISS-46 Storm clouds above the Indian Ocean.jpg",
+    caption: "Storm clouds over the Indian Ocean, photographed from the International Space Station",
+    line: "Lightning, hail, squalls and dust storms, mostly before and during the monsoon.",
+    about: "Lightning kills more people in India than any other natural hazard, according to NCRB records, most of them caught in the open. Thunderstorms peak before and during the monsoon, bringing hail, squalls and dust storms. The Damini app from IITM Pune warns of lightning near you.",
+    tips: { before: ["Check the forecast before heading to the fields or outdoors.", "When you can hear thunder, lightning is close enough to strike: go indoors.", "Unplug electrical appliances before the storm arrives."],
+            during: ["Shelter in a solid building or a hard-roofed vehicle, not under a tree.", "Keep away from water, metal fences, poles and open fields.", "If you're caught in the open, crouch low with your feet together and head tucked in; don't lie flat."],
+            after: ["Wait 30 minutes after the last thunder before going back outside.", "Someone struck by lightning carries no charge: give first aid and call 112.", "Keep clear of fallen trees and power lines."] } },
+];
+
+const CITIES = [["Mumbai", 19.076, 72.878], ["Chennai", 13.083, 80.271], ["Kolkata", 22.573, 88.364], ["Guwahati", 26.145, 91.736],
+                ["Patna", 25.594, 85.138], ["Shimla", 31.105, 77.173]];
+const RADII = [25, 50, 100, 250];
+
+let data = { events: [], shelters: [], sources: {}, demo: false, ai: false, now: Date.now() / 1000 };
+let sevFilter = null, place = null, radius = RADII.includes(store.get("wi.radius")) ? store.get("wi.radius") : 100;
+
+// --- Images: fade in when loaded; keep the tinted fallback if the file can't be fetched
+function loadImg(img, file, src) {
+  img.addEventListener("load", () => img.classList.add("ready"), { once: true });
+  img.addEventListener("error", () => img.remove(), { once: true });
+  img.decoding = "async";
+  if (file) img.srcset = srcset(file);
+  img.src = src || photo(file, 960);
+}
+document.querySelectorAll("img[data-file]").forEach(img => { img.loading = "lazy"; loadImg(img, img.dataset.file); });
+
+// --- Hero video: a muted satellite loop that waits for a tap when the viewer prefers less motion or is saving data
+const video = $("hero-video"), vbtn = $("vid-toggle");
+let wantPlay = !reduce && !saveData, heroSeen = true;
+video.poster = videoPoster;
+const probe = new Image();  // if even the still frame is unreachable, drop the caption that describes it
+probe.onerror = () => { video.removeAttribute("poster"); $("vid-cap").hidden = true; };
+probe.src = videoPoster;
+$("vid-cap").innerHTML = `Satellite loop: ${esc(VIDEO.caption)} · <a href="${filePage(VIDEO.file)}" target="_blank" rel="noopener">${esc(VIDEO.credit)}</a>`;
+function fillVideo(v, small) {
+  if (v.dataset.filled) return;
+  v.dataset.filled = "1";
+  v.innerHTML = videoSources(small).map(s => `<source src="${esc(s)}" type="video/webm">`).join("");
+  v.lastElementChild.addEventListener("error", () => { v.classList.add("failed"); if (v === video) syncVideo(); });
+  v.load();
+}
+function syncVideo() {
+  vbtn.hidden = video.classList.contains("failed");
+  vbtn.innerHTML = wantPlay ? `${ICON.pause}Pause` : `${ICON.play}Play`;
+  vbtn.setAttribute("aria-label", `${wantPlay ? "Pause" : "Play"} the satellite loop`);
+  if (wantPlay && heroSeen && !video.classList.contains("failed")) {
+    fillVideo(video, innerWidth < 720);
+    video.play().catch(() => {});
+  } else video.pause();
+}
+vbtn.addEventListener("click", () => { wantPlay = !wantPlay; syncVideo(); });
+new IntersectionObserver(([entry]) => { heroSeen = entry.isIntersecting; syncVideo(); }).observe($("top"));  // no decoding off-screen
+
+// --- Snapshot: counts roll to their new value; the IMD scale filters the list below it
+function countTo(el, n) {
+  const from = Number(el.dataset.n || 0);
+  el.dataset.n = n;
+  if (reduce || from === n) return void (el.textContent = num(n));
+  const t0 = performance.now();
+  const tick = t => {
+    const p = Math.min(1, (t - t0) / 900);
+    el.textContent = num(Math.round(from + (n - from) * (1 - (1 - p) ** 3)));
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function renderSnapshot() {
+  const { events, shelters } = data, open = shelters.filter(s => s.active), severe = events.filter(e => sevOf(e) >= 2).length;
+  countTo($("n-events"), events.length);
+  countTo($("n-severe"), severe);
+  countTo($("n-shelters"), open.length);
+  countTo($("n-free"), open.reduce((a, s) => a + free(s), 0));
+  $("demo-chip").hidden = !data.demo;
+  $("pulse").textContent = events.length ? `${plural(events.length, "active alert")}${severe ? ` · ${num(severe)} severe or worse` : ""}` : "No active alerts right now";
+
+  const count = Object.fromEntries(SEV.map(s => [s, events.filter(e => e.severity === s).length]));
+  const levels = [...SEV].reverse();
+  $("sevbar").innerHTML = events.length ? levels.filter(s => count[s]).map(s =>
+    `<button type="button" class="sev-${s}${sevFilter && sevFilter !== s ? " dim" : ""}" style="--n:${count[s]}" data-sev="${s}" aria-pressed="${sevFilter === s}"
+       aria-label="${SEV_LABEL[s]} (${IMD_COLOUR[s]}): ${plural(count[s], "event")}"
+       data-tip="${SEV_LABEL[s]} · ${plural(count[s], "event")} (${Math.round(100 * count[s] / events.length)}%)"></button>`).join("")
+    : '<span class="none"></span>';
+  $("sevkey").innerHTML = levels.map(s => `<li><button type="button" class="sev-${s}" data-sev="${s}" aria-pressed="${sevFilter === s}">${SEV_LABEL[s]} <b>${count[s]}</b></button></li>`).join("");
+
+  const list = events.filter(e => !sevFilter || e.severity === sevFilter).sort(bySeverity).slice(0, 3);
+  $("latest").innerHTML = list.length ? list.map(e => `<li><a class="sev-${e.severity}" href="${mapAt(e, 8)}">
+      <span>${esc(e.event_types.join(" · "))}<small>${esc(where(e))}</small></span><em>${SEV_LABEL[e.severity]}</em></a></li>`).join("")
+    : `<li class="empty">${sevFilter ? `No ${SEV_LABEL[sevFilter].toLowerCase()} events right now.` : "Nothing to show yet."}</li>`;
+}
+function pickSev(ev) {
+  const b = ev.target.closest("[data-sev]");
+  if (!b) return;
+  sevFilter = sevFilter === b.dataset.sev ? null : b.dataset.sev;
+  renderSnapshot();
+}
+$("sevbar").addEventListener("click", pickSev);
+$("sevkey").addEventListener("click", pickSev);
+function showTip(ev) {
+  const b = ev.target.closest("[data-tip]"), tip = $("sev-tip");
+  if (!b) return void (tip.hidden = true);
+  const box = b.closest(".sevwrap").getBoundingClientRect(), r = b.getBoundingClientRect();
+  tip.textContent = b.dataset.tip;
+  tip.style.left = `${r.left + r.width / 2 - box.left}px`;
+  tip.style.bottom = `${box.bottom - r.top + 6}px`;
+  tip.hidden = false;
+}
+["pointerover", "focusin"].forEach(t => $("sevbar").addEventListener(t, showTip));
+["pointerleave", "focusout"].forEach(t => $("sevbar").addEventListener(t, () => { $("sev-tip").hidden = true; }));
+
+// --- Ticker: every active alert, most serious first; hovering, focusing or the button pauses it
+let tickerKey = "";
+function ago(t) {
+  const m = Math.max(1, Math.round((data.now - t) / 60));
+  return m < 60 ? `${m}m ago` : m < 2880 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`;
+}
+function renderTicker() {
+  const list = [...data.events].sort(bySeverity), key = list.map(e => e.id + e.severity + e.last_t).join();
+  if (key === tickerKey) return;  // re-rendering would restart the scroll
+  tickerKey = key;
+  const item = (e, copy) => `<li${copy ? ' aria-hidden="true"' : ""}><a class="sev-${e.severity}" href="${mapAt(e, 8)}"${copy ? ' tabindex="-1"' : ""}>
+      <i></i><b>${esc(e.event_types.join(" · "))}</b> ${esc(where(e))} <small>${ago(e.last_t)}</small></a></li>`;
+  const track = $("tk-track");
+  // a second copy follows the first, so sliding by half the width loops seamlessly
+  track.innerHTML = list.length ? list.map(e => item(e)).join("") + (reduce ? "" : list.map(e => item(e, true)).join(""))
+    : "<li><small>No active alerts right now.</small></li>";
+  track.style.animationName = list.length && !reduce ? "" : "none";
+  track.style.setProperty("--dur", `${Math.max(30, track.scrollWidth / 2 / 45)}s`);
+}
+$("tk-toggle").innerHTML = ICON.pause;
+$("tk-toggle").addEventListener("click", ev => {
+  const paused = $("ticker").classList.toggle("paused"), b = ev.currentTarget;
+  b.setAttribute("aria-pressed", String(paused));
+  b.setAttribute("aria-label", `${paused ? "Play" : "Pause"} the alert ticker`);
+  b.innerHTML = paused ? ICON.play : ICON.pause;
+});
+
+// --- Near you: a mini map with the shared place picker (search, GPS or a click on the map)
+let mini = null, picker = null, layers = null;
+const markers = {};
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+if (window.L && window.makePicker) {
+  mini = L.map("mini-map", { zoomSnap: 0.5, scrollWheelZoom: false }).setView([22.8, 80.5], 4.5);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(mini);
+  layers = { area: L.layerGroup().addTo(mini), shelters: L.layerGroup().addTo(mini), events: L.layerGroup().addTo(mini) };
+  picker = makePicker($("n-picker"), mini);
+  $("n-picker").addEventListener("change", () => choose(picker.value));
+} else {  // no Leaflet (blocked or offline): the city buttons and the lists still work
+  $("near-map").hidden = true;
+  $("n-picker").hidden = true;
+}
+$("quick").insertAdjacentHTML("beforeend", CITIES.map(([name], i) => `<button type="button" data-city="${i}">${name}</button>`).join(""));
+$("radius").insertAdjacentHTML("beforeend", RADII.map(r => `<button type="button" data-r="${r}" aria-pressed="${r === radius}">${r} km</button>`).join(""));
+$("quick").addEventListener("click", ev => {
+  const c = CITIES[ev.target.closest("[data-city]")?.dataset.city];
+  if (!c) return;
+  const p = { label: c[0], lat: c[1], lon: c[2] };
+  picker ? picker.set(p) : choose(p);
+});
+function setRadius(r) {
+  radius = r;
+  $("radius").querySelectorAll("[data-r]").forEach(x => x.setAttribute("aria-pressed", String(+x.dataset.r === r)));
+}
+$("radius").addEventListener("click", ev => {
+  const b = ev.target.closest("[data-r]");
+  if (!b) return;
+  setRadius(Number(b.dataset.r));
+  store.set("wi.radius", radius);
+  renderNear(true);
+});
+function choose(p) {
+  place = p;
+  store.set("wi.place", p);
+  if (picker) picker.clearMarker();  // the area layer draws its own pin
+  renderNear(true);
+}
+const zoomFor = r => ({ 25: 10, 50: 9, 100: 8, 250: 7 })[r];
+
+function nearItem(key, p, cls, title, sub, d, extra = "") {
+  const open = mini ? `button type="button" class="it ${cls}" data-key="${key}" data-lat="${p.lat}" data-lon="${p.lon}"` : `a class="it ${cls}" href="${mapAt(p, 11)}"`;
+  return `<li><${open}><b>${title}</b><span class="d">${Math.round(d)} km</span><small>${sub}</small>${extra}</${mini ? "button" : "a"}></li>`;
+}
+function renderNear(fit = false) {
+  const lists = $("near-lists"), v = $("verdict");
+  const events = data.events.filter(e => e.lat != null);
+  if (!place) {
+    lists.hidden = true;
+    v.className = "verdict";
+    v.textContent = "Choose a place to see alerts and shelters near it.";
+  } else {
+    const nearEv = events.map(e => ({ e, d: km(place, e) })).filter(x => x.d <= radius).sort((a, b) => bySeverity(a.e, b.e) || a.d - b.d);
+    const nearSh = data.shelters.filter(s => s.active).map(s => ({ s, d: km(place, s) })).sort((a, b) => a.d - b.d);
+    const withSpace = nearSh.find(x => free(x.s) > 0), severe = nearEv.filter(x => sevOf(x.e) >= 2).length;
+    const label = place.label === "My current location" ? "you" : place.label;  // the picker's name for a GPS fix
+    v.className = `verdict ${!nearEv.length ? "ok" : severe ? "bad" : "warn"}`;
+    v.textContent = (nearEv.length
+      ? `${plural(nearEv.length, "active alert")} within ${radius} km of ${label}${severe ? `, ${num(severe)} severe or worse` : ""}.`
+      : `No active alerts within ${radius} km of ${label}.`)
+      + (withSpace ? ` Nearest open shelter with space: ${withSpace.s.name}, ${Math.round(withSpace.d)} km away.` : " No open shelter with space is listed yet.");
+    lists.hidden = false;
+    $("ne-h").textContent = `Alerts within ${radius} km`;
+    $("near-events").innerHTML = nearEv.length ? nearEv.slice(0, 6).map(({ e, d }) => nearItem(`e${e.id}`, e, `sev-${e.severity}`,
+        esc(e.event_types.join(" · ")), `${SEV_LABEL[e.severity]} · ${e.timing === "forecast" ? "forecast / warning" : "observed"} · ${esc(where(e))}`, d)).join("")
+      : '<li class="empty">Nothing active here right now.</li>';
+    const inside = nearSh.filter(x => x.d <= radius).slice(0, 4);
+    $("ns-h").textContent = inside.length ? `Open shelters within ${radius} km` : "Nearest open shelters";
+    $("near-shelters").innerHTML = (inside.length ? inside : nearSh.slice(0, 3)).map(({ s, d }) => nearItem(`s${s.id}`, s, `avail-${avail(s)}`,
+        esc(s.name) + (s.demo ? ' <span class="chip sample">Sample</span>' : ""), `${esc(s.type)} · ${num(free(s))} of ${num(s.capacity)} places free`, d,
+        `<span class="meter"><i style="width:${Math.min(100, Math.round(100 * s.occupancy / Math.max(1, s.capacity)))}%"></i></span>`)).join("")
+      || '<li class="empty">No open shelters are listed yet.</li>';
+    $("near-link").href = mapAt(place, zoomFor(radius));
+  }
+  if (!mini) return;
+  const ring = css("--pin-ring") || "#fff";
+  Object.values(layers).forEach(l => l.clearLayers());
+  for (const e of events) {
+    const inside = !place || km(place, e) <= radius;
+    markers[`e${e.id}`] = L.circleMarker([e.lat, e.lon], { radius: 6 + sevOf(e) * 1.5, color: ring, weight: 2, fillColor: css(`--sev-${e.severity}`),
+                                                            fillOpacity: inside ? .95 : .3, opacity: inside ? 1 : .4 })
+      .bindTooltip(`<b>${esc(e.event_types.join(" · "))}</b><br>${SEV_LABEL[e.severity]} · ${esc(where(e))}`)
+      .bindPopup(`<b>${esc(e.event_types.join(" · "))}</b><br>${SEV_LABEL[e.severity]} · ${esc(where(e))}<br><a href="${mapAt(e, 9)}">Open on the live map →</a>`)
+      .addTo(layers.events);
+  }
+  for (const s of data.shelters) {
+    markers[`s${s.id}`] = L.marker([s.lat, s.lon], { keyboard: false, icon: L.divIcon({ className: "", html: `<div class="shelter-pin avail-${avail(s)}">🏠</div>`,
+                                                                                        iconSize: [22, 22], iconAnchor: [11, 11] }) })
+      .bindTooltip(`<b>${esc(s.name)}</b><br>${s.active ? `${num(free(s))} places free` : "Closed"}`)
+      .addTo(layers.shelters);
+  }
+  if (place) {
+    const circle = L.circle([place.lat, place.lon], { radius: radius * 1000, color: css("--accent"), weight: 1.5, dashArray: "5 5", fillOpacity: .06 }).addTo(layers.area);
+    L.marker([place.lat, place.lon], { keyboard: false, icon: L.divIcon({ className: "", html: '<div class="pick-pin"></div>', iconSize: [18, 18] }) })
+      .bindTooltip(esc(place.label)).addTo(layers.area);
+    if (fit) reduce ? mini.fitBounds(circle.getBounds(), { padding: [16, 16], animate: false })
+                    : mini.flyToBounds(circle.getBounds(), { padding: [16, 16], duration: .6 });
+  }
+}
+["near-events", "near-shelters"].forEach(id => $(id).addEventListener("click", ev => {
+  const b = ev.target.closest("[data-key]");
+  if (!b || !mini) return;
+  mini.once("moveend", () => markers[b.dataset.key]?.openTooltip());
+  const at = [+b.dataset.lat, +b.dataset.lon], z = Math.max(mini.getZoom(), 10);
+  reduce ? mini.setView(at, z, { animate: false }) : mini.flyTo(at, z, { duration: .6 });
+  $("mini-map").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+}));
+
+// --- Hazard gallery and its detail dialog
+let hzOpen = 0, hzWhen = "during";
+const matching = h => data.events.filter(e => e.event_types.some(t => h.types.includes(t))).sort(bySeverity);
+$("hz-grid").innerHTML = HAZARDS.map((h, i) => `<button type="button" class="hz" data-i="${i}" style="--tone:${h.tone}" aria-haspopup="dialog"
+      aria-labelledby="hz-name-${i} hz-badge-${i}" aria-describedby="hz-line-${i}">
+    <span class="ph" data-icon="${h.icon}">
+      <img alt="" loading="lazy" sizes="(max-width: 640px) 100vw, 380px">
+      ${h.video ? `<span class="vid-tag">${ICON.play}Satellite video</span>` : ""}
+      <span class="hz-over"><span class="hz-name" id="hz-name-${i}">${esc(h.name)}</span><span class="badge" id="hz-badge-${i}">…</span></span>
+    </span>
+    <span class="hz-foot"><span class="line" id="hz-line-${i}">${esc(h.line)}</span><span class="cta">What to do →</span></span>
+  </button>`).join("");
+document.querySelectorAll("#hz-grid .hz").forEach((card, i) => {
+  const h = HAZARDS[i];
+  loadImg(card.querySelector("img"), h.file, h.video ? videoPoster : null);  // the video's still frame stands in for a photo
+});
+function renderBadges() {
+  HAZARDS.forEach((h, i) => {
+    const list = matching(h), b = $(`hz-badge-${i}`);
+    b.className = `badge${list.length ? ` sev-${list[0].severity}` : ""}`;
+    b.textContent = list.length ? `${num(list.length)} active` : "None active";
+  });
+  if ($("hz-dlg").open) renderHazardLive();
+}
+function renderHazardLive() {
+  const h = HAZARDS[hzOpen], list = matching(h);
+  $("hz-live").innerHTML = list.length
+    ? `<b>Active now · ${num(list.length)}</b><ul>${list.slice(0, 4).map(e => `<li><a class="sev-${e.severity}" href="${mapAt(e, 8)}"><span>${esc(e.event_types.join(" · "))} · ${esc(where(e))}</span></a></li>`).join("")}</ul>`
+    : "<b>Active now</b><span>Nothing at the moment.</span>";
+  const type = list.length ? list[0].event_types.find(t => h.types.includes(t)) : null;
+  $("hz-map").href = type ? `/map?type=${encodeURIComponent(type)}` : "/map";
+  $("hz-map").textContent = type ? `See ${type.toLowerCase()} alerts on the map` : "Open the live map";
+}
+function renderTips() {
+  document.querySelectorAll("#hz-tabs [role=tab]").forEach(t => {
+    const on = t.dataset.when === hzWhen;
+    t.setAttribute("aria-selected", String(on));
+    t.tabIndex = on ? 0 : -1;
+  });
+  $("hz-tips").setAttribute("aria-labelledby", `tab-${hzWhen}`);
+  $("hz-tips").innerHTML = HAZARDS[hzOpen].tips[hzWhen].map(t => `<li>${esc(t)}</li>`).join("");
+}
+function openHazard(i) {
+  hzOpen = (i + HAZARDS.length) % HAZARDS.length;
+  const h = HAZARDS[hzOpen], frame = $("hz-frame");
+  const refocus = ["hz-frame", "hz-cap", "hz-live"].some(id => $(id).contains(document.activeElement));  // about to be replaced
+  frame.dataset.icon = h.icon;
+  frame.style.setProperty("--tone", h.tone);
+  if (h.video) {
+    frame.innerHTML = `<video class="ready" controls muted loop playsinline preload="metadata" poster="${esc(videoPoster)}" aria-label="${esc(h.caption)}"></video>`;
+    fillVideo(frame.firstElementChild, true);
+    if (!reduce && !saveData) frame.firstElementChild.play().catch(() => {});
+    $("hz-cap").innerHTML = `${esc(h.caption)} · <a href="${filePage(VIDEO.file)}" target="_blank" rel="noopener">${esc(VIDEO.credit)}, via Wikimedia Commons</a>`;
+  } else {
+    frame.innerHTML = `<img alt="${esc(h.caption)}" sizes="(max-width: 900px) 100vw, 560px">`;
+    loadImg(frame.firstElementChild, h.file);
+    $("hz-cap").innerHTML = `${esc(h.caption)} · <a href="${filePage(h.file)}" target="_blank" rel="noopener">Photo via Wikimedia Commons</a>`;
+  }
+  $("hz-pos").textContent = `Hazard ${hzOpen + 1} of ${HAZARDS.length}`;
+  $("hz-title").textContent = `${h.icon} ${h.name}`;
+  $("hz-about").textContent = h.about;
+  renderHazardLive();
+  renderTips();
+  if (!$("hz-dlg").open) $("hz-dlg").showModal();
+  else if (refocus) $("hz-close").focus();
+}
+$("hz-grid").addEventListener("click", ev => { const c = ev.target.closest("[data-i]"); if (c) openHazard(Number(c.dataset.i)); });
+$("hz-prev").addEventListener("click", () => openHazard(hzOpen - 1));
+$("hz-next").addEventListener("click", () => openHazard(hzOpen + 1));
+$("hz-close").addEventListener("click", () => $("hz-dlg").close());
+$("hz-dlg").addEventListener("click", ev => { if (ev.target === ev.currentTarget) ev.currentTarget.close(); });  // a click on the backdrop
+$("hz-dlg").addEventListener("close", () => { $("hz-frame").innerHTML = ""; });  // stops the video
+$("hz-tabs").addEventListener("click", ev => { const t = ev.target.closest("[data-when]"); if (t) { hzWhen = t.dataset.when; renderTips(); } });
+$("hz-dlg").addEventListener("keydown", ev => {
+  if (!["ArrowLeft", "ArrowRight"].includes(ev.key) || ev.target.closest("video")) return;
+  const d = ev.key === "ArrowRight" ? 1 : -1;
+  if (ev.target.closest("#hz-tabs")) {  // arrows move between the tabs, as in any tab list
+    const order = ["before", "during", "after"];
+    hzWhen = order[(order.indexOf(hzWhen) + d + 3) % 3];
+    renderTips();
+    $(`tab-${hzWhen}`).focus();
+  } else openHazard(hzOpen + d);
+  ev.preventDefault();
+});
+
+// --- How it works: six steps, each with a live figure from /api/events and /api/shelters
+const STEPS = [
+  { t: "Warnings come in", d: "Official alerts from IMD, CWC and state disaster authorities arrive through NDMA's SACHET feed, alongside GDACS disaster alerts, USGS earthquakes and Open-Meteo forecasts. Signed-in people add what they see on the ground.",
+    fact: () => { const s = Object.entries(data.sources); return `<b>Sources right now</b>${s.length ? `<div class="chips">${s.map(([n, v]) => `<span class="chip ${v.state === "ok" ? "ok" : v.state === "error" ? "bad" : ""}">${esc(n)} · ${v.state === "ok" ? "responding" : v.state === "error" ? "not responding" : "starting"}</span>`).join("")}</div>` : "<span>Connecting…</span>"}`; } },
+  { t: "Claude reads each report", d: "Written reports are read by Claude, which picks out the hazard, how severe it is, whether it has happened or is only forecast, and every place named. Chain-message wording and unverifiable claims are noted as red flags.",
+    fact: () => `<b>On this server</b><span>${data.ai ? "Claude analysis is on: people can paste a report in their own words." : "Claude analysis is off here. Official feeds and the structured report form still work."}</span>` },
+  { t: "Places go on the map", d: "Each place is looked up in OpenStreetMap with its district and state, so a report about Andheri lands in Mumbai. Places too vague to pin down are left off the map rather than guessed.",
+    fact: () => `<b>Mapped</b><span class="big">${num(data.events.filter(e => e.lat != null).length)}</span><span>of ${plural(data.events.length, "active event")} have a place on the map.</span>` },
+  { t: "Duplicates become one event", d: "Reports about the same hazard, within 25 km and 6 hours of each other, are merged into one event, so ten posts about one flood show up as a single pin with ten reports behind it.",
+    fact: () => `<b>Merged</b><span class="big">${num(data.events.reduce((a, e) => a + e.reports.length, 0))} → ${num(data.events.length)}</span><span>reports grouped into events.</span>` },
+  { t: "Checked before it's trusted", d: "An event is verified when an official source or a moderator confirms it, or when three independent sources agree. If half its reports carry red flags, it's marked likely misleading, however many times it has been shared.",
+    fact: () => { const c = s => data.events.filter(e => e.status === s).length; return `<b>Right now</b><div class="chips"><span class="chip verified">${c("verified")} verified</span><span class="chip review">${c("review")} need review</span><span class="chip misleading">${c("misleading")} likely misleading</span></div>`; } },
+  { t: "Shelters and the control room act", d: "Shelter operators post open beds and what they need. The control room checks that every severe event has an open shelter within 50 km, and flags shelters that are nearly full or haven't reported in 24 hours.",
+    fact: () => { const open = data.shelters.filter(s => s.active); return `<b>Shelters</b><span class="big">${num(open.reduce((a, s) => a + free(s), 0))}</span><span>places free across ${plural(open.length, "open shelter")}.</span>`; } },
+];
+let step = 0;
+$("steps").innerHTML = STEPS.map((s, i) => `<li role="presentation"><button type="button" role="tab" id="step-${i}" data-step="${i}" aria-controls="step-panel"><i>${i + 1}</i><span>${esc(s.t)}</span></button></li>`).join("");
+function renderStep() {
+  document.querySelectorAll("#steps [role=tab]").forEach((b, i) => {
+    b.setAttribute("aria-selected", String(i === step));
+    b.classList.toggle("done", i < step);
+    b.tabIndex = i === step ? 0 : -1;
+  });
+  const s = STEPS[step];
+  $("step-panel").setAttribute("aria-labelledby", `step-${step}`);
+  $("step-panel").innerHTML = `<div><h3>${step + 1}. ${esc(s.t)}</h3><p>${esc(s.d)}</p>
+      <div class="step-nav"><button class="btn ghost small" type="button" data-go="-1" ${step ? "" : "disabled"}>← Back</button>
+      <button class="btn small" type="button" data-go="1" ${step < STEPS.length - 1 ? "" : "disabled"}>Next step →</button></div></div>
+    <div class="fact" id="fact">${s.fact()}</div>`;
+}
+$("steps").addEventListener("click", ev => { const b = ev.target.closest("[data-step]"); if (b) { step = Number(b.dataset.step); renderStep(); } });
+$("steps").addEventListener("keydown", ev => {
+  const d = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[ev.key];
+  if (d == null) return;
+  step = (step + d + STEPS.length) % STEPS.length;
+  renderStep();
+  $(`step-${step}`).focus();
+  ev.preventDefault();
+});
+$("step-panel").addEventListener("click", ev => {
+  const b = ev.target.closest("[data-go]");
+  if (!b) return;
+  step += Number(b.dataset.go);
+  renderStep();
+  ($("step-panel").querySelector(`[data-go="${b.dataset.go}"]:not(:disabled)`) || $(`step-${step}`)).focus();  // keep the keyboard where it was
+});
+
+// --- Credits for every photo and the video
+const credits = [[VIDEO.file, `Cyclone Michaung satellite loop (${VIDEO.credit})`], ...HAZARDS.filter(h => h.file).map(h => [h.file, h.caption]),
+                 ...[...document.querySelectorAll("img[data-file]")].map(img => [img.dataset.file, img.alt])];
+$("credits").innerHTML = `Photos and video via Wikimedia Commons, where each file's page lists its author and licence: ${credits.map(([f, label]) =>
+  `<a href="${filePage(f)}" target="_blank" rel="noopener">${esc(label)}</a>`).join(" · ")}`;
+
+// --- Sections ease in on scroll
+if (!reduce && "IntersectionObserver" in window) {
+  document.documentElement.classList.add("anim");
+  const io = new IntersectionObserver(entries => entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } }),
+                                      { rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll(".reveal").forEach(el => io.observe(el));
+}
+
+// --- Data
+let lastJson = "";
+async function refresh() {
+  try {
+    const [ev, sh] = await Promise.all([fetch("/api/events").then(r => r.json()), fetch("/api/shelters").then(r => r.json())]);
+    const json = JSON.stringify([ev.events, sh.shelters, ev.sources, ev.demo, ev.ai]);
+    if (json !== lastJson) {  // rebuilding unchanged data would close map popups and move keyboard focus
+      lastJson = json;
+      data = { events: ev.events, shelters: sh.shelters, sources: ev.sources, demo: ev.demo, ai: ev.ai, now: ev.now };
+      renderSnapshot();
+      renderTicker();
+      renderBadges();
+      renderNear();
+      $("fact").innerHTML = STEPS[step].fact();
+    }
+    const t = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    $("when").textContent = $("updated").textContent = `Updated ${t}`;
+  } catch { /* the numbers are a preview; every link works without them */ }
+}
+
+renderStep();
+syncVideo();
+const saved = store.get("wi.place");
+if (saved && Number.isFinite(saved.lat) && Number.isFinite(saved.lon)) {
+  place = saved;
+  if (picker) picker.set(saved, true);
+}
 (async () => {
   try {
     const { user } = await (await fetch("/api/me")).json();
-    if (user) {
-      const [href, label] = HOME[user.role] || HOME.user;
-      $("me").hidden = false;
-      $("me").innerHTML = `Signed in as ${esc(user.name)} · <a href="${href}">Go to ${label}</a>`;
+    if (!user) return;
+    const [href, label] = HOME[user.role] || HOME.user;
+    $("me").hidden = false;
+    $("me").innerHTML = `Signed in as ${esc(user.name)} · <a href="${href}">Go to ${label}</a>`;
+    if (!place && user.alert) {  // start from the area they get alerts for
+      if (RADII.includes(user.alert.radius_km)) setRadius(user.alert.radius_km);
+      place = { lat: user.alert.lat, lon: user.alert.lon, label: user.alert.label };
+      if (picker) picker.set(place, true);
+      renderNear(true);
     }
   } catch {}
 })();
-
-async function snapshot() {
-  try {
-    const [ev, sh] = await Promise.all([fetch("/api/events").then(r => r.json()), fetch("/api/shelters").then(r => r.json())]);
-    const open = sh.shelters.filter(s => s.active);
-    $("n-events").textContent = ev.events.length;
-    $("n-severe").textContent = ev.events.filter(e => SEV.indexOf(e.severity) >= 2).length;
-    $("n-shelters").textContent = open.length;
-    $("n-free").textContent = open.reduce((a, s) => a + Math.max(0, s.capacity - s.occupancy), 0).toLocaleString("en-IN");
-    $("latest").innerHTML = ev.events.sort((a, b) => SEV.indexOf(b.severity) - SEV.indexOf(a.severity) || b.last_t - a.last_t).slice(0, 3)
-      .map(e => `<li class="sev-${e.severity}"><span>${esc(e.event_types.join(" · "))}<small>${esc(e.places[0] || "")}${e.states.length ? " — " + esc(e.states[0]) : ""}</small></span></li>`).join("");
-    $("updated").textContent = `Updated ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-  } catch { /* the numbers are a preview; every link works without them */ }
-}
-snapshot();
-setInterval(snapshot, 60000);
+refresh().then(() => { if (place) renderNear(true); });
+setInterval(refresh, 60000);
 </script>
 </body>
 </html>

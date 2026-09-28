@@ -372,9 +372,13 @@ function km(a, b) {
 let events = [], sources = {}, now = Date.now() / 1000, lastJson = "", markers = {}, openId = null, me = null, ai = false;
 const counts = {}, flashUntil = {};
 let notified = null;  // ids of in-area events already announced; null until the first check
+// Links from the front page: /map?type=Flood filters by hazard, /map?at=lat,lon&z=9 centres the map
+const params = new URLSearchParams(location.search);
+let wantType = params.get("type");
+const at = (params.get("at") || "").split(",").map(Number), centred = at.length === 2 && at.every(Number.isFinite);
 
 // --- Map
-const map = L.map("map", { zoomSnap: 0.5 }).setView([22.8, 80.5], 5);
+const map = L.map("map", { zoomSnap: 0.5 }).setView(centred ? at : [22.8, 80.5], centred ? Math.min(+params.get("z") || 9, 14) : 5);
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 }).addTo(map);
@@ -546,6 +550,8 @@ async function poll() {
       lastJson = json;
       events = data.events;
       fillSelect("f-type", [...new Set(events.flatMap(e => e.event_types))].sort());
+      if (wantType && [...$("f-type").options].some(o => o.value === wantType)) $("f-type").value = wantType;
+      if (events.length) wantType = null;
       fillSelect("f-state", [...new Set(events.flatMap(e => e.states))].sort());
     }
     if (changed || (sourcesChanged && !events.length)) render();
