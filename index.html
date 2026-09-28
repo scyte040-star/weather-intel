@@ -8,52 +8,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="/static/base.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
-  :root {
-    --bg: #edf1f5; --panel: #ffffff; --panel-2: #f5f7fa; --line: #dbe2ea; --text: #0e1a28; --muted: #5a6a7c;
-    --accent: #1d4f91; --accent-soft: #e3ecf8;
-    --ok: #1c7445; --ok-soft: #dcf2e5; --warn: #8f5500; --warn-soft: #fcefd6; --bad: #b3261e; --bad-soft: #fbe1de;
-    --fc: #3f3d9e; --fc-soft: #e7e6fb;
-    /* IMD's colour-coded warning scale */
-    --sev-low: #2e9e5b; --sev-moderate: #e0a800; --sev-high: #ef7300; --sev-extreme: #d42a3c;
-    --pin-ring: #ffffff;
-    --shadow: 0 1px 2px rgb(14 26 40 / 8%), 0 6px 20px rgb(14 26 40 / 8%);
-    --sans: "IBM Plex Sans", system-ui, "Segoe UI", Roboto, sans-serif;
-    --cond: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
-    --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
-    color-scheme: light;
-  }
+  body { display: grid; grid-template-rows: auto auto 1fr; }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0a121b; --panel: #101b27; --panel-2: #152231; --line: #213244; --text: #e3ebf3; --muted: #8fa1b4;
-      --accent: #86b4ff; --accent-soft: #1a2c44;
-      --ok: #62d394; --ok-soft: #13301f; --warn: #f3b760; --warn-soft: #382811; --bad: #ff8d84; --bad-soft: #3b1917;
-      --fc: #b8b5ff; --fc-soft: #242347; --pin-ring: #101b27;
-      --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 6px 20px rgb(0 0 0 / 35%);
-      color-scheme: dark;
-    }
     .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.82) contrast(.92) saturate(.55); }
   }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body { margin: 0; display: grid; grid-template-rows: auto auto 1fr; background: var(--bg); color: var(--text);
-         font: 14px/1.45 var(--sans); }
-  button, select, input, textarea { font: inherit; color: inherit; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  [hidden] { display: none !important; }
-
-  /* Header */
-  .top { display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; padding: 10px 16px;
-         background: var(--panel); border-bottom: 1px solid var(--line); }
-  .brand h1 { margin: 0; font: 700 19px/1.1 var(--cond); letter-spacing: .005em; text-wrap: balance; }
-  .brand p { margin: 1px 0 0; color: var(--muted); font-size: 12.5px; }
-  .live { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px; border-radius: 99px;
-          background: var(--ok-soft); color: var(--ok); font-size: 12px; font-weight: 600; white-space: nowrap; }
-  .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: blink 2s infinite; }
-  .live.down { background: var(--bad-soft); color: var(--bad); }
-  @keyframes blink { 50% { opacity: .25; } }
-  .sources { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+  .sources { display: flex; gap: 6px; flex-wrap: wrap; }
   .src { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 99px;
          background: var(--panel-2); font-size: 12px; white-space: nowrap; }
   .src::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
@@ -63,48 +25,72 @@
   .src b { font: 500 12px var(--mono); }
 
   /* Summary strip */
-  .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--line);
-          border-bottom: 1px solid var(--line); }
+  .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--line); border-bottom: 1px solid var(--line); }
   .kpi { background: var(--panel); padding: 10px 16px 12px; min-width: 0; }
   .kpi .label { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
   .kpi .value { font: 600 28px/1.15 var(--cond); font-variant-numeric: tabular-nums; }
   .kpi .sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sevbar { display: flex; gap: 2px; height: 6px; margin-top: 6px; }
   .sevbar span { border-radius: 2px; background: var(--c); min-width: 0; }
-  .verif { display: flex; gap: 16px; }
+  .verif { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .verif .value { font-size: 22px; }
+  .verif .sub { white-space: normal; line-height: 1.25; }
   .verif .ok { color: var(--ok); } .verif .warn { color: var(--warn); } .verif .bad { color: var(--bad); }
 
   /* Layout */
   main { display: grid; grid-template-columns: 410px 1fr; min-height: 0; }
   aside { display: flex; flex-direction: column; min-height: 0; background: var(--panel); border-right: 1px solid var(--line); }
   #map { min-height: 0; background: var(--panel-2); }
+  #map.picking { cursor: crosshair; }
   .banner { margin: 0; padding: 8px 16px; background: var(--warn-soft); color: var(--warn); font-size: 12.5px; font-weight: 600;
             border-bottom: 1px solid var(--line); }
+  .ptabs { display: flex; border-bottom: 1px solid var(--line); padding: 0 8px; }
+  .ptabs button { flex: 1; padding: 11px 6px 9px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted);
+                  font: 600 14px var(--cond); cursor: pointer; margin-bottom: -1px; white-space: nowrap; }
+  .ptabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+  .ptabs .badge { margin-left: 6px; padding: 0 6px; border-radius: 99px; background: var(--c, var(--accent)); color: #fff; font: 600 11px/17px var(--mono); }
+  .panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .panel.scroll { overflow: auto; padding: 16px; gap: 16px; }
+  .stack { display: grid; gap: 12px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .panel h3 { margin: 0; font: 600 17px/1.2 var(--cond); }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13.5px; }
+  .check input { width: auto; }
+  .gate { display: grid; gap: 10px; padding: 18px; border: 1px dashed var(--line); border-radius: 10px; background: var(--panel-2); }
+  .gate p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .gate .actions { justify-content: flex-start; }
 
-  /* Report form (only when AI analysis is configured) */
-  details.report { padding: 12px 16px; border-bottom: 1px solid var(--line); }
-  details.report summary { cursor: pointer; font: 600 14px var(--cond); }
-  form { display: grid; gap: 8px; margin-top: 10px; }
-  textarea, input, select { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
-  textarea { min-height: 84px; resize: vertical; }
-  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .btn { padding: 8px 12px; border: 0; border-radius: 6px; background: var(--accent); color: var(--panel); font-weight: 600; cursor: pointer; }
-  .btn:disabled { opacity: .6; cursor: progress; }
-  #report-out { margin: 0; min-height: 1em; font-size: 13px; }
-  #report-out.ok { color: var(--ok); } #report-out.err { color: var(--bad); }
+  /* Location picker */
+  .picker { display: grid; gap: 8px; font-size: 13.5px; letter-spacing: 0; text-transform: none; font-weight: 400; color: var(--text); }
+  .picker .search { display: flex; gap: 6px; }
+  .picker .results { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .picker .results button { width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; background: var(--panel-2); text-align: left; cursor: pointer; font-size: 13px; }
+  .picker .results button:hover { background: var(--accent-soft); }
+  .picker .ways { display: flex; gap: 6px; flex-wrap: wrap; }
+  .picker .chosen { margin: 0; padding: 7px 10px; border-radius: 7px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .picker .chosen.none { background: var(--panel-2); color: var(--muted); font-weight: 400; }
 
-  /* Filters */
+  /* My area */
+  .area-card { position: relative; display: grid; gap: 6px; padding: 14px 14px 14px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); overflow: hidden; }
+  .area-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--c, var(--ok)); }
+  .area-card .level { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+  .area-card .risk { font: 600 22px/1.15 var(--cond); }
+  .area-card ul { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+  .area-card li button { width: 100%; display: flex; gap: 8px; align-items: baseline; padding: 6px 8px; border: 0; border-radius: 6px; background: var(--panel);
+                         text-align: left; cursor: pointer; font-size: 13px; }
+  .area-card li button::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+  .area-card li small { margin-left: auto; color: var(--muted); font: 11.5px var(--mono); white-space: nowrap; }
+  .near { display: flex; align-items: center; gap: 8px; margin: 10px 16px 0; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+          background: var(--panel-2); cursor: pointer; font-size: 13px; text-align: left; }
+  .near::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--ok)); flex: none; }
+
+  /* Filters and feed */
   .controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
-  .controls label, .feedhead label { display: grid; gap: 3px; font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
-                                     text-transform: uppercase; color: var(--muted); }
-  .controls select, .feedhead select { padding: 5px 6px; font-size: 13px; letter-spacing: 0; text-transform: none; font-weight: 400; color: var(--text); }
+  .controls select, .feedhead select { padding: 5px 6px; font-size: 13px; }
   .feedhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 16px;
               border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
   .feedhead label { display: flex; align-items: center; gap: 6px; }
   .feedhead select { width: auto; }
-
-  /* Feed */
   #feed { flex: 1; overflow: auto; margin: 0; padding: 0; list-style: none; }
   .card { position: relative; display: grid; gap: 4px; padding: 11px 16px 12px 20px; border-bottom: 1px solid var(--line); cursor: pointer; }
   .card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--c); }
@@ -118,17 +104,6 @@
   .card .meta .ago { font-family: var(--mono); font-size: 11.5px; }
   .unres { color: var(--warn); }
   .empty { padding: 28px 16px; color: var(--muted); text-align: center; }
-  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
-  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; white-space: nowrap; }
-  .chip.sev { background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--text); }
-  .chip.sev::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
-  .chip.verified { background: var(--ok-soft); color: var(--ok); }
-  .chip.review { background: var(--warn-soft); color: var(--warn); }
-  .chip.misleading { background: var(--bad-soft); color: var(--bad); }
-  .chip.forecast { background: var(--fc-soft); color: var(--fc); }
-  .chip.observed { background: var(--accent-soft); color: var(--accent); }
-  .sev-low { --c: var(--sev-low); } .sev-moderate { --c: var(--sev-moderate); }
-  .sev-high { --c: var(--sev-high); } .sev-extreme { --c: var(--sev-extreme); }
 
   /* Map pins, popups, legend */
   .pin-wrap { background: none; border: 0; }
@@ -142,6 +117,7 @@
   .pin.new { animation: ping 1s ease-out 3; }
   @keyframes ping { 50% { transform: scale(1.3); } }
   .leaflet-marker-icon:hover .pin, .leaflet-marker-icon:focus-visible .pin { transform: scale(1.15); }
+  .pick-pin { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); border: 3px solid var(--panel); box-shadow: 0 0 0 2px var(--accent); }
   .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--text); box-shadow: var(--shadow); }
   .leaflet-popup-content { margin: 14px 16px; }
   .leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
@@ -161,13 +137,14 @@
   .timeline .src-name { font-weight: 600; }
   .timeline p { margin: 2px 0 0; }
   .timeline .flags { color: var(--bad); font-size: 12px; }
-  .legend { padding: 9px 11px; border-radius: 8px; background: var(--panel); color: var(--text); box-shadow: var(--shadow);
-            font-size: 12px; line-height: 1.9; }
+  .legend { padding: 9px 11px; border-radius: 8px; background: var(--panel); color: var(--text); box-shadow: var(--shadow); font-size: 12px; line-height: 1.9; }
   .legend .scale { display: flex; gap: 10px; flex-wrap: wrap; }
   .legend .sw { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--c); vertical-align: -1px; margin-right: 4px; }
   .legend .ring { display: inline-block; width: 13px; height: 13px; border-radius: 50%; border: 2px dashed var(--muted); vertical-align: -2px; margin-right: 4px; }
   .legend .n { display: inline-block; min-width: 16px; padding: 0 3px; border-radius: 8px; background: var(--text); color: var(--panel);
                font: 600 10px/16px var(--mono); text-align: center; margin-right: 4px; }
+  .toast { position: fixed; right: 16px; bottom: 16px; z-index: 1200; max-width: min(360px, calc(100% - 32px)); padding: 12px 14px;
+           border-radius: 10px; background: var(--text); color: var(--panel); box-shadow: var(--shadow); font-size: 13.5px; }
 
   @media (max-width: 860px) {
     body { height: auto; }
@@ -176,23 +153,20 @@
     main { grid-template-columns: 1fr; }
     #map { height: 58vh; order: -1; }
     aside { border-right: 0; }
-    #feed { overflow: visible; }
+    #feed, .panel.scroll { overflow: visible; }
     .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .sources { margin-left: 0; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before { animation: none !important; transition: none !important; }
   }
 </style>
 </head>
 <body>
 <header class="top">
-  <div class="brand">
+  <a class="brand" href="/">
     <h1>Weather Intelligence · India</h1>
     <p>Live hazard alerts and observations, grouped into events and checked against their sources</p>
-  </div>
+  </a>
   <span class="live" id="updated">Connecting…</span>
-  <div class="sources" id="sources" aria-label="Data sources"></div>
+  <div class="sources push" id="sources" aria-label="Data sources"></div>
+  <div id="account"></div>
 </header>
 
 <section class="kpis" aria-label="Summary">
@@ -204,7 +178,7 @@
   <div class="kpi">
     <div class="label">Severe or worse</div>
     <div class="value" id="k-severe">–</div>
-    <div class="sub" id="k-severe-sub">Orange and red on IMD's scale</div>
+    <div class="sub">Orange and red on IMD's scale</div>
   </div>
   <div class="kpi">
     <div class="label">Official alerts</div>
@@ -229,61 +203,123 @@
 <main>
   <aside>
     <p class="banner" id="demo" hidden>Simulated demo reports are mixed in with the live data (DEMO_DATA=1).</p>
-    <details class="report" id="report" hidden>
-      <summary>Report a weather event</summary>
-      <form id="report-form">
-        <textarea id="r-text" required minlength="10" maxlength="5000" aria-label="Report text"
-          placeholder="Paste a news headline or post, or describe what you see. e.g. “Road near Baner, Pune completely underwater after 2 hours of rain”"></textarea>
-        <div class="two">
-          <select id="r-source" aria-label="Source type">
-            <option value="citizen">Citizen report</option>
-            <option value="social">Social media</option>
-            <option value="news">News</option>
+    <div class="ptabs" role="tablist">
+      <button role="tab" aria-selected="true" data-panel="feed">Live feed</button>
+      <button role="tab" aria-selected="false" data-panel="area">My area<span class="badge" id="area-badge" hidden></span></button>
+      <button role="tab" aria-selected="false" data-panel="report">Report an event</button>
+    </div>
+
+    <section class="panel" id="panel-feed" role="tabpanel">
+      <button class="near" id="near" hidden></button>
+      <div class="controls">
+        <label class="field">Event <select id="f-type"><option value="">All types</option></select></label>
+        <label class="field">State <select id="f-state"><option value="">All states</option></select></label>
+        <label class="field">Severity
+          <select id="f-sev">
+            <option value="">Any</option><option value="moderate">Moderate +</option>
+            <option value="high">Severe +</option><option value="extreme">Extreme</option>
           </select>
-          <input id="r-name" maxlength="80" placeholder="Source name (optional)" aria-label="Source name">
+        </label>
+        <label class="field">Timing
+          <select id="f-timing">
+            <option value="">Any</option><option value="observed">Observed</option><option value="forecast">Forecast / warning</option>
+          </select>
+        </label>
+        <label class="field">Source
+          <select id="f-source">
+            <option value="">Any</option><option value="official">Official</option><option value="model">Weather model</option>
+            <option value="citizen">Citizen</option><option value="news">News</option><option value="social">Social media</option>
+          </select>
+        </label>
+        <label class="field">Status
+          <select id="f-status">
+            <option value="">Any</option><option value="verified">Verified</option>
+            <option value="review">Needs review</option><option value="misleading">Likely misleading</option>
+          </select>
+        </label>
+      </div>
+      <div class="feedhead">
+        <span id="count" aria-live="polite"></span>
+        <label>Sort
+          <select id="f-sort"><option value="severity">Most severe</option><option value="latest">Latest</option></select>
+        </label>
+      </div>
+      <ul id="feed" aria-label="Events"></ul>
+    </section>
+
+    <section class="panel scroll" id="panel-area" role="tabpanel" hidden>
+      <div class="gate" data-auth="out">
+        <h3>Get alerts for your area</h3>
+        <p>Pick a place and a distance, and see every active event around it at a glance. Your browser can notify you when a new one appears.</p>
+        <div class="actions"><a class="btn" href="/signup?next=/">Create account</a><a class="btn ghost" href="/login?next=/">Sign in</a></div>
+      </div>
+      <div id="area-summary" data-auth="in" hidden></div>
+      <form class="stack" id="area-form" data-auth="in" hidden>
+        <h3 id="area-title">Set your area</h3>
+        <div class="field">Location <div class="picker" id="a-picker"></div></div>
+        <label class="field">Name for this area <input id="a-label" maxlength="80" placeholder="e.g. Home, Office, Navi Mumbai"></label>
+        <div class="two">
+          <label class="field">Within
+            <select id="a-radius"><option value="10">10 km</option><option value="25">25 km</option><option value="50" selected>50 km</option>
+              <option value="100">100 km</option><option value="200">200 km</option></select>
+          </label>
+          <label class="field">Include
+            <select id="a-sev"><option value="low">All events</option><option value="moderate" selected>Moderate +</option>
+              <option value="high">Severe +</option><option value="extreme">Extreme only</option></select>
+          </label>
         </div>
-        <button class="btn" id="r-submit">Analyse and add</button>
-        <p id="report-out" role="status"></p>
+        <label class="check"><input type="checkbox" id="a-notify"> Notify me in this browser when a new event appears</label>
+        <p class="msg" id="a-msg" role="status"></p>
+        <div class="actions"><button type="button" class="btn ghost" id="a-remove" hidden>Remove area</button><button class="btn" id="a-save">Save area</button></div>
       </form>
-    </details>
-    <div class="controls">
-      <label>Event <select id="f-type"><option value="">All types</option></select></label>
-      <label>State <select id="f-state"><option value="">All states</option></select></label>
-      <label>Severity
-        <select id="f-sev">
-          <option value="">Any</option><option value="moderate">Moderate +</option>
-          <option value="high">Severe +</option><option value="extreme">Extreme</option>
-        </select>
-      </label>
-      <label>Timing
-        <select id="f-timing">
-          <option value="">Any</option><option value="observed">Observed</option><option value="forecast">Forecast / warning</option>
-        </select>
-      </label>
-      <label>Source
-        <select id="f-source">
-          <option value="">Any</option><option value="official">Official</option><option value="model">Weather model</option>
-          <option value="news">News</option><option value="citizen">Citizen</option><option value="social">Social media</option>
-        </select>
-      </label>
-      <label>Status
-        <select id="f-status">
-          <option value="">Any</option><option value="verified">Verified</option>
-          <option value="review">Needs review</option><option value="misleading">Likely misleading</option>
-        </select>
-      </label>
-    </div>
-    <div class="feedhead">
-      <span id="count" aria-live="polite"></span>
-      <label>Sort
-        <select id="f-sort"><option value="severity">Most severe</option><option value="latest">Latest</option></select>
-      </label>
-    </div>
-    <ul id="feed" aria-label="Events"></ul>
+    </section>
+
+    <section class="panel scroll" id="panel-report" role="tabpanel" hidden>
+      <div class="gate" data-auth="out">
+        <h3>Report what you see</h3>
+        <p>Signed-in users can add flooding, storms, landslides and other hazards to the map. Reports are checked against other sources and reviewed by moderators.</p>
+        <div class="actions"><a class="btn" href="/signup?next=/">Create account</a><a class="btn ghost" href="/login?next=/">Sign in</a></div>
+      </div>
+      <form class="stack" id="report-form" data-auth="in" hidden>
+        <h3>Report a weather event</h3>
+        <div class="two">
+          <label class="field">What happened <select id="r-type"></select></label>
+          <label class="field">When
+            <select id="r-timing"><option value="observed">Happening now</option><option value="forecast">Expected soon</option></select>
+          </label>
+        </div>
+        <label class="field">How severe
+          <select id="r-sev">
+            <option value="low">Minor: noticeable, no disruption</option><option value="moderate" selected>Moderate: local disruption</option>
+            <option value="high">Severe: widespread disruption or evacuations</option><option value="extreme">Extreme: lives at risk</option>
+          </select>
+        </label>
+        <div class="field">Where <div class="picker" id="r-picker"></div></div>
+        <label class="field">Place name <span class="hint">Optional; looked up from the location if blank.</span>
+          <input id="r-place" maxlength="120" placeholder="e.g. Andheri subway, Mumbai"></label>
+        <label class="field">What do you see
+          <textarea id="r-desc" maxlength="2000" placeholder="e.g. Knee-deep water on the main road near the station; buses have stopped."></textarea></label>
+        <p class="msg" id="r-msg" role="status"></p>
+        <button class="btn" id="r-submit">Submit report</button>
+      </form>
+      <details id="ai-box" hidden>
+        <summary class="field" style="cursor:pointer">Or paste a news report or post for Claude to analyse</summary>
+        <form class="stack" id="ai-form" style="margin-top:10px">
+          <textarea id="ai-text" maxlength="5000" aria-label="News report or post" placeholder="Paste a headline, article or post. Claude extracts the event type, severity and places."></textarea>
+          <div class="two">
+            <select id="ai-source" aria-label="Where it's from"><option value="news">News</option><option value="social">Social media</option><option value="citizen">My own words</option></select>
+            <input id="ai-name" maxlength="80" placeholder="Source name (optional)" aria-label="Source name">
+          </div>
+          <p class="msg" id="ai-msg" role="status"></p>
+          <button class="btn" id="ai-submit">Analyse and add</button>
+        </form>
+      </details>
+    </section>
   </aside>
   <div id="map" aria-label="Map of events"></div>
 </main>
 
+<script src="/static/account.js"></script>
 <script>
 const ICONS = {
   "Heavy Rainfall": "🌧️", "Rain": "🌦️", "Flood": "🌊", "Flash Flood": "🌊", "Cloudburst": "☁️", "Thunderstorm": "⛈️",
@@ -301,16 +337,29 @@ const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
 const icon = t => ICONS[t] || ICONS.Other;
 const clock = t => new Date(t * 1000).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const sev = e => SEV.indexOf(e.severity);
+const post = async (url, body) => {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  return data;
+};
+function km(a, b) {
+  const r = Math.PI / 180, h = Math.sin((b.lat - a.lat) * r / 2) ** 2
+    + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h));
+}
 
-let events = [], sources = {}, now = Date.now() / 1000, lastJson = "", markers = {}, openId = null;
+let events = [], sources = {}, now = Date.now() / 1000, lastJson = "", markers = {}, openId = null, me = null, ai = false;
 const counts = {}, flashUntil = {};
+let notified = null;  // ids of in-area events already announced; null until the first check
 
+// --- Map
 const map = L.map("map", { zoomSnap: 0.5 }).setView([22.8, 80.5], 5);
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 }).addTo(map);
 new ResizeObserver(() => map.invalidateSize()).observe($("map"));  // web fonts and header wrapping resize the map
-const layer = L.layerGroup().addTo(map);
+const areaLayer = L.layerGroup().addTo(map), layer = L.layerGroup().addTo(map), pickLayer = L.layerGroup().addTo(map);
 const legend = L.control({ position: "bottomright" });
 legend.onAdd = () => Object.assign(L.DomUtil.create("div", "legend"), {
   innerHTML: `<div class="scale">${SEV.map(s => `<span><i class="sw sev-${s}"></i>${SEV_LABEL[s]}</span>`).join("")}</div>`
@@ -431,11 +480,11 @@ function renderStats() {
   const n = f => events.filter(f).length;
   const reports = events.flatMap(e => e.reports);
   const official = reports.filter(r => r.source_type === "official");
+  const agencies = new Set(official.map(r => r.source_name)).size;
   $("k-events").textContent = events.length;
   $("k-sevbar").innerHTML = SEV.map(s => `<span class="sev-${s}" style="flex:${n(e => e.severity === s)}"></span>`).join("");
   $("k-severe").textContent = n(e => sev(e) >= 2);
   $("k-official").textContent = official.length;
-  const agencies = new Set(official.map(r => r.source_name)).size;
   $("k-official-sub").textContent = `from ${agencies} ${agencies === 1 ? "agency" : "agencies"}`;
   $("k-merged").textContent = reports.length - events.length;
   $("k-merged-sub").textContent = `${plural(reports.length, "report")} → ${plural(events.length, "event")}`;
@@ -458,8 +507,9 @@ async function poll() {
     now = data.now;
     const sourcesChanged = JSON.stringify(data.sources) !== JSON.stringify(sources);
     sources = data.sources;
+    ai = data.ai;
     $("demo").hidden = !data.demo;
-    $("report").hidden = !data.ai;
+    $("ai-box").hidden = !(ai && me);
     const json = JSON.stringify(data.events), changed = json !== lastJson;
     if (changed) {
       const first = !lastJson;
@@ -474,6 +524,7 @@ async function poll() {
     }
     if (changed || (sourcesChanged && !events.length)) render();
     else document.querySelectorAll("#feed .ago").forEach(s => { s.textContent = ago(+s.dataset.t); });
+    if (changed) renderArea();
     renderStats();
     renderSources();
     $("updated").className = "live";
@@ -487,39 +538,243 @@ async function poll() {
 document.querySelector(".controls").addEventListener("change", render);
 $("f-sort").addEventListener("change", render);
 
-function focusEvent(li) {
-  const e = events.find(x => x.id === li?.dataset.id);
+function focusEvent(id) {
+  const e = events.find(x => x.id === id);
   if (!e || e.lat == null) return;
+  showPanel("feed");
   map.flyTo([e.lat, e.lon], Math.max(map.getZoom(), 8), { duration: .8 });
   map.once("moveend", () => markers[e.id]?.openPopup());
 }
-$("feed").addEventListener("click", ev => focusEvent(ev.target.closest("li")));
-$("feed").addEventListener("keydown", ev => { if (ev.key === "Enter") focusEvent(ev.target.closest("li")); });
+$("feed").addEventListener("click", ev => focusEvent(ev.target.closest("li")?.dataset.id));
+$("feed").addEventListener("keydown", ev => { if (ev.key === "Enter") focusEvent(ev.target.closest("li")?.dataset.id); });
+
+// --- Panels and sign-in state
+function showPanel(name) {
+  document.querySelectorAll(".ptabs [data-panel]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.panel === name)));
+  document.querySelectorAll("aside .panel").forEach(p => { p.hidden = p.id !== `panel-${name}`; });
+}
+document.querySelector(".ptabs").addEventListener("click", ev => {
+  const name = ev.target.closest("[data-panel]")?.dataset.panel;
+  if (name) showPanel(name);
+});
+$("near").addEventListener("click", () => showPanel("area"));
+
+document.addEventListener("account", ev => {
+  me = ev.detail;
+  document.querySelectorAll("[data-auth]").forEach(el => { el.hidden = (el.dataset.auth === "in") !== Boolean(me); });
+  $("ai-box").hidden = !(ai && me);
+  loadAreaForm();
+  renderArea();
+});
+
+// --- Location picker: search, GPS or a click on the map
+let picking = null;  // the picker waiting for a map click
+function makePicker(root) {
+  root.innerHTML = `<div class="search"><input type="search" placeholder="Search a place in India" aria-label="Search a place">
+      <button type="button" class="btn small ghost" data-way="search">Search</button></div>
+    <ul class="results"></ul>
+    <div class="ways"><button type="button" class="btn small ghost" data-way="gps">Use my location</button>
+      <button type="button" class="btn small ghost" data-way="map">Pick on the map</button></div>
+    <p class="chosen none">No location chosen yet</p>`;
+  const picker = { value: null, root };
+  const input = root.querySelector("input"), results = root.querySelector(".results"), chosen = root.querySelector(".chosen");
+  picker.set = v => {
+    picker.value = v;
+    chosen.className = `chosen${v ? "" : " none"}`;
+    chosen.textContent = v ? `📍 ${v.label}` : "No location chosen yet";
+    results.innerHTML = "";
+    pickLayer.clearLayers();
+    if (v) {
+      L.marker([v.lat, v.lon], { icon: L.divIcon({ className: "", html: '<div class="pick-pin"></div>', iconSize: [18, 18] }) }).addTo(pickLayer);
+      map.flyTo([v.lat, v.lon], Math.max(map.getZoom(), 9), { duration: .6 });
+    }
+    root.dispatchEvent(new Event("change"));
+  };
+  const say = text => { chosen.className = "chosen none"; chosen.textContent = text; };
+  async function search() {
+    if (input.value.trim().length < 2) return say("Type at least 2 characters.");
+    say("Searching…");
+    try {
+      const res = await fetch(`/api/places?q=${encodeURIComponent(input.value.trim())}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      if (!data.places.length) return say("No places found. Try a nearby town, or pick on the map.");
+      say("Choose one:");
+      results.innerHTML = data.places.map((p, i) => `<li><button type="button" data-i="${i}">${esc(p.label)}</button></li>`).join("");
+      results.onclick = ev => {
+        const p = data.places[ev.target.closest("[data-i]")?.dataset.i];
+        if (p) picker.set({ lat: p.lat, lon: p.lon, label: p.label });
+      };
+    } catch (err) {
+      say(err.message || "Search failed.");
+    }
+  }
+  input.addEventListener("keydown", ev => { if (ev.key === "Enter") { ev.preventDefault(); search(); } });
+  root.addEventListener("click", ev => {
+    const way = ev.target.closest("[data-way]")?.dataset.way;
+    if (way === "search") search();
+    if (way === "gps") {
+      if (!navigator.geolocation) return say("This browser can't share its location.");
+      say("Finding you…");
+      navigator.geolocation.getCurrentPosition(
+        pos => picker.set({ lat: pos.coords.latitude, lon: pos.coords.longitude, label: "My current location" }),
+        () => say("Location access was blocked. Search for a place or pick on the map."), { timeout: 10000 });
+    }
+    if (way === "map") {
+      picking = picker;
+      $("map").classList.add("picking");
+      say("Click the map to choose the spot.");
+      $("map").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  });
+  return picker;
+}
+map.on("click", ev => {
+  if (!picking) return;
+  const p = picking;
+  picking = null;
+  $("map").classList.remove("picking");
+  p.set({ lat: ev.latlng.lat, lon: ev.latlng.lng, label: `Pinned at ${ev.latlng.lat.toFixed(3)}, ${ev.latlng.lng.toFixed(3)}` });
+});
+
+// --- Report an event
+const reportPicker = makePicker($("r-picker"));
+$("r-type").innerHTML = Object.keys(ICONS).filter(t => t !== "Other").map(t => `<option>${esc(t)}</option>`).join("") + "<option>Other</option>";
+$("r-type").value = "Flood";
 
 $("report-form").addEventListener("submit", async ev => {
   ev.preventDefault();
-  const out = $("report-out"), btn = $("r-submit");
-  btn.disabled = true;
-  out.className = "";
-  out.textContent = "Analysing with Claude…";
+  const msg = $("r-msg"), loc = reportPicker.value;
+  msg.className = "msg err";
+  if (!loc) return msg.textContent = "Choose where it's happening.";
+  if ($("r-desc").value.trim().length < 10) return msg.textContent = "Describe what you see in at least 10 characters.";
+  $("r-submit").disabled = true;
+  msg.className = "msg";
+  msg.textContent = "Sending…";
   try {
-    const res = await fetch("/api/reports", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: $("r-text").value, source_type: $("r-source").value, source_name: $("r-name").value }),
+    await post("/api/reports", {
+      event_type: $("r-type").value, severity: $("r-sev").value, timing: $("r-timing").value,
+      lat: loc.lat, lon: loc.lon, place: $("r-place").value, description: $("r-desc").value,
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
-    const places = data.places.map(p => p.name + (p.lat == null ? " (not mapped)" : "")).join(", ") || "no place named";
-    out.textContent = `Added: ${data.event_types.join(", ")} · ${SEV_LABEL[data.severity]} · ${places}`;
-    out.className = "ok";
+    msg.className = "msg ok";
+    msg.textContent = "Thanks. Your report is on the map and waiting for other sources or a moderator to confirm it.";
     ev.target.reset();
-    poll();
+    reportPicker.set(null);
+    await poll();
   } catch (err) {
-    out.textContent = err.message;
-    out.className = "err";
+    msg.className = "msg err";
+    msg.textContent = err.message;
   } finally {
-    btn.disabled = false;
+    $("r-submit").disabled = false;
   }
+});
+
+$("ai-form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const msg = $("ai-msg");
+  $("ai-submit").disabled = true;
+  msg.className = "msg";
+  msg.textContent = "Analysing with Claude…";
+  try {
+    const r = await post("/api/reports", { text: $("ai-text").value, source_type: $("ai-source").value, source_name: $("ai-name").value });
+    msg.className = "msg ok";
+    msg.textContent = `Added: ${r.event_types.join(", ")} · ${SEV_LABEL[r.severity]} · ${r.places.map(p => p.name + (p.lat == null ? " (not mapped)" : "")).join(", ") || "no place named"}`;
+    ev.target.reset();
+    await poll();
+  } catch (err) {
+    msg.className = "msg err";
+    msg.textContent = err.message;
+  } finally {
+    $("ai-submit").disabled = false;
+  }
+});
+
+// --- My area
+const areaPicker = makePicker($("a-picker"));
+
+function loadAreaForm() {
+  const a = me?.alert;
+  $("area-title").textContent = a ? "Change your area" : "Set your area";
+  $("a-remove").hidden = !a;
+  if (!a) return;
+  areaPicker.value = { lat: a.lat, lon: a.lon, label: a.label };
+  areaPicker.root.querySelector(".chosen").className = "chosen";
+  areaPicker.root.querySelector(".chosen").textContent = `📍 ${a.label}`;
+  $("a-label").value = a.label;
+  $("a-radius").value = String(a.radius_km);
+  $("a-sev").value = a.min_severity;
+  $("a-notify").checked = a.notify;
+}
+
+function inArea(a) {
+  return events.filter(e => e.lat != null && sev(e) >= SEV.indexOf(a.min_severity) && km(a, e) <= a.radius_km)
+    .sort((x, y) => sev(y) - sev(x) || y.last_t - x.last_t);
+}
+
+function renderArea() {
+  const a = me?.alert;
+  areaLayer.clearLayers();
+  $("near").hidden = $("area-badge").hidden = !a;
+  if (!a) {
+    $("area-summary").innerHTML = "";
+    return;
+  }
+  const list = inArea(a), top = list[0];
+  const tone = top ? `sev-${top.severity}` : "";
+  L.circle([a.lat, a.lon], { radius: a.radius_km * 1000, color: "#1d4f91", weight: 1.5, dashArray: "6 5", fillOpacity: 0.05, interactive: false }).addTo(areaLayer);
+  $("area-badge").textContent = list.length;
+  $("area-badge").className = `badge ${tone}`;
+  $("near").className = `near ${tone}`;
+  $("near").textContent = `${a.label}: ${list.length ? `${plural(list.length, "event")} within ${a.radius_km} km, highest ${SEV_LABEL[top.severity].toLowerCase()}` : `nothing within ${a.radius_km} km right now`}`;
+  $("area-summary").innerHTML = `<div class="area-card ${tone}">
+    <div class="level">${esc(a.label)} · within ${a.radius_km} km · ${a.min_severity === "low" ? "all events" : SEV_LABEL[a.min_severity] + " and above"}</div>
+    <div class="risk">${list.length ? `${plural(list.length, "active event")}, highest ${SEV_LABEL[top.severity].toLowerCase()}` : "All clear right now"}</div>
+    ${list.length ? `<ul>${list.slice(0, 8).map(e => `<li class="sev-${e.severity}"><button type="button" data-id="${esc(e.id)}">${esc(e.event_types.join(" · "))} — ${esc(e.places[0] || "")}<small>${Math.round(km(a, e))} km</small></button></li>`).join("")}</ul>` : ""}
+  </div>`;
+  // Browser notifications for events that appear after the first check
+  const ids = new Set(list.map(e => e.id));
+  if (notified && a.notify && "Notification" in window && Notification.permission === "granted") {
+    for (const e of list.filter(e => !notified.has(e.id))) {
+      new Notification(`${SEV_LABEL[e.severity]}: ${e.event_types.join(", ")}`, { body: `${e.places[0] || ""} · ${Math.round(km(a, e))} km from ${a.label}`, tag: e.id });
+    }
+  }
+  if (events.length) notified = ids;
+}
+$("area-summary").addEventListener("click", ev => focusEvent(ev.target.closest("[data-id]")?.dataset.id));
+
+$("area-form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const msg = $("a-msg"), loc = areaPicker.value;
+  msg.className = "msg err";
+  if (!loc) return msg.textContent = "Choose a location first.";
+  if ($("a-notify").checked && "Notification" in window && Notification.permission === "default") await Notification.requestPermission();
+  const notify = $("a-notify").checked && "Notification" in window && Notification.permission === "granted";
+  try {
+    const { user } = await post("/api/me/alert", { alert: {
+      label: $("a-label").value.trim() || loc.label, lat: loc.lat, lon: loc.lon,
+      radius_km: Number($("a-radius").value), min_severity: $("a-sev").value, notify,
+    } });
+    me = window.account.me = user;
+    notified = null;
+    loadAreaForm();
+    renderArea();
+    msg.className = "msg ok";
+    msg.textContent = $("a-notify").checked && !notify ? "Saved. Notifications are blocked in this browser, so check this tab instead." : "Saved.";
+    pickLayer.clearLayers();
+  } catch (err) {
+    msg.textContent = err.message;
+  }
+});
+
+$("a-remove").addEventListener("click", async () => {
+  const { user } = await post("/api/me/alert", { alert: null });
+  me = window.account.me = user;
+  $("area-form").reset();
+  areaPicker.set(null);
+  loadAreaForm();
+  renderArea();
+  $("a-msg").className = "msg ok";
+  $("a-msg").textContent = "Area removed.";
 });
 
 poll();

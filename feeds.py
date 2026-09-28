@@ -64,16 +64,27 @@ def event_types(event):
     return list(dict.fromkeys(found)) or ["Other"]
 
 
-def cap_places(desc, lat, lon):
+def sender_state(*names):
+    """'Andhra Pradesh SDMA' / 'Uttar-Pradesh-SDMA' -> the state; '' for national senders like IMD or CWC."""
+    for name in names:
+        m = re.match(r"(.+?)[\s-]*SDMA$", (name or "").strip())
+        if m:
+            return m.group(1).replace("-", " ")
+    return ""
+
+
+def cap_places(desc, lat, lon, fallback_state=""):
     """areaDesc -> places. Examples: 'Ganga, Rishikesh, Dehradun, Uttarakhand' (with a point),
-    'Karur, Tiruchirappalli districts of Tamil Nadu', '8 districts of Rajasthan'."""
+    'Karur, Tiruchirappalli districts of Tamil Nadu', '8 districts of Rajasthan', '12 Mandals' (from a state SDMA)."""
     m = re.search(r"\bof\s+([^,]+)$", desc) or re.search(r",\s*([^,]+)$", desc)
-    state = m.group(1) if m else desc
+    state = m.group(1) if m else (fallback_state or desc)
     if lat is not None:
         return [place(desc, "locality", state, lat, lon)]
-    m = re.match(r"(.*?)\s+districts?\s+of\s+", desc, re.I)
-    if m and not m.group(1)[:1].isdigit():  # named districts; "8 districts of X" names none
-        return [place(d, "district", state) for d in re.split(r",|\band\b", m.group(1)) if d.strip()]
+    districts = re.match(r"(.*?)\s+districts?\s+of\s+", desc, re.I)
+    if districts and not districts.group(1)[:1].isdigit():  # named districts; "8 districts of X" names none
+        return [place(d, "district", state) for d in re.split(r",|\band\b", districts.group(1)) if d.strip()]
+    if not m and fallback_state and desc:  # keep the local name, but let the state pin it if it can't be found
+        return [place(desc, "locality", state), place(state, "state", state)]
     return [place(state, "state", state)] if state else []
 
 
@@ -100,7 +111,8 @@ def parse_cap(guid, sender, body):
                   event_types(f"{field('event')} {field('headline')}"),  # headline adds e.g. "...with lightning"
                   CAP_SEVERITY.get(field("severity"), "moderate"),
                   "observed" if field("certainty") == "Observed" else "forecast",
-                  cap_places(desc, lat, lon), epoch(field("expires")) if field("expires") else None)
+                  cap_places(desc, lat, lon, sender_state(sender, alert.findtext("cap:sender", "", CAP))),
+                  epoch(field("expires")) if field("expires") else None)
 
 
 def sachet():

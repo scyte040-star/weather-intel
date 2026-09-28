@@ -14,5 +14,9 @@ services:
         value: 3.12.10
       - key: ANTHROPIC_API_KEY
         sync: false  # Render asks for the value when you create the service; it never goes in the repo
+      - key: ADMIN_EMAIL
+        sync: false  # the administrator account, recreated on every start (the free plan's disk is wiped on restart)
+      - key: ADMIN_PASSWORD
+        sync: false
       - key: DAILY_REPORT_LIMIT
         value: "100"

@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · Weather Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/base.css">
+<style>
+  main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 48px; display: grid; gap: 16px; }
+  .head { display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; }
+  .head h2 { margin: 0; font: 600 26px/1.1 var(--cond); }
+  .head p { margin: 4px 0 0; color: var(--muted); }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+  .tabs button { padding: 9px 14px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted);
+                 font: 600 14px var(--cond); cursor: pointer; margin-bottom: -1px; }
+  .tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+  .tabs .count { margin-left: 6px; padding: 0 7px; border-radius: 99px; background: var(--panel-2); font: 500 11.5px/18px var(--mono); }
+  .tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .tools label { display: inline-flex; gap: 6px; align-items: center; }
+  .tools input[type="checkbox"] { width: auto; }
+  .tools input[type="search"] { width: 240px; }
+  .table-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { position: sticky; top: 0; padding: 9px 12px; background: var(--panel-2); border-bottom: 1px solid var(--line); text-align: left;
+       font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.time { font: 12px var(--mono); white-space: nowrap; color: var(--muted); }
+  td .text { max-width: 44ch; }
+  td .sub { color: var(--muted); font-size: 12px; }
+  td.acts { white-space: nowrap; }
+  td.acts .btn + .btn { margin-left: 4px; }
+  .empty { padding: 32px 16px; text-align: center; color: var(--muted); }
+  .temp { display: inline-flex; gap: 6px; align-items: center; margin-top: 6px; padding: 4px 8px; border-radius: 6px; background: var(--warn-soft);
+          color: var(--warn); font-size: 12px; }
+  .temp code { font: 600 13px var(--mono); color: var(--text); user-select: all; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--muted); }
+  .dot.ok { background: var(--ok); } .dot.error { background: var(--bad); }
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/">
+    <h1>Weather Intelligence · India</h1>
+    <p>Administration</p>
+  </a>
+  <div class="push" id="account"></div>
+</header>
+
+<main>
+  <div class="head">
+    <div>
+      <h2>Admin</h2>
+      <p>Review reports from signed-in users, manage accounts and check the live data sources.</p>
+    </div>
+    <a class="btn ghost" href="/">Back to the live map</a>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="reports">Reports<span class="count" id="c-reports">–</span></button>
+    <button role="tab" aria-selected="false" data-tab="users">Users<span class="count" id="c-users">–</span></button>
+    <button role="tab" aria-selected="false" data-tab="sources">Data sources</button>
+  </div>
+
+  <section id="tab-reports" role="tabpanel">
+    <div class="tools">
+      <label><input type="checkbox" id="pending-only" checked> Awaiting review only</label>
+      <span id="report-note"></span>
+    </div>
+    <div class="table-wrap" style="margin-top:10px">
+      <table>
+        <thead><tr><th>Submitted</th><th>By</th><th>Event</th><th>Where</th><th>Report</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="reports"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="tab-users" role="tabpanel" hidden>
+    <div class="tools"><input type="search" id="user-search" placeholder="Search name or email" aria-label="Search users"></div>
+    <div class="table-wrap" style="margin-top:10px">
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody id="users"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="tab-sources" role="tabpanel" hidden>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Source</th><th>Status</th><th>Active reports</th><th>Last updated</th><th>Details</th></tr></thead>
+        <tbody id="sources"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script src="/static/account.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const when = t => new Date(t * 1000).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const SEV_LABEL = { low: "Minor", moderate: "Moderate", high: "Severe", extreme: "Extreme" };
+const REVIEW = { verified: ["Verified", "ok"], rejected: ["Rejected", "bad"], null: ["Awaiting review", "warn"] };
+const post = async (url, body) => {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  return data;
+};
+let reports = [], users = [], me = null, armed = null;  // armed = the delete button waiting for a second click
+const temps = {};  // user id -> temporary password, shown once after a reset
+
+document.querySelector(".tabs").addEventListener("click", ev => {
+  const tab = ev.target.closest("[data-tab]")?.dataset.tab;
+  if (!tab) return;
+  document.querySelectorAll(".tabs [data-tab]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
+  document.querySelectorAll("[role=tabpanel]").forEach(p => { p.hidden = p.id !== `tab-${tab}`; });
+});
+
+async function loadReports() {
+  reports = (await (await fetch("/api/admin/reports")).json()).reports;
+  renderReports();
+}
+
+function renderReports() {
+  const pendingOnly = $("pending-only").checked;
+  const list = reports.filter(r => !pendingOnly || !r.review);
+  const pending = reports.filter(r => !r.review).length;
+  $("c-reports").textContent = pending;
+  $("report-note").textContent = `${reports.length} user report${reports.length === 1 ? "" : "s"} in total, ${pending} awaiting review.`;
+  $("reports").innerHTML = list.length ? list.map(r => {
+    const [label, cls] = REVIEW[r.review ?? null];
+    const where = r.places.map(p => p.name).join(", ") + (r.places[0]?.state ? ` — ${r.places[0].state}` : "");
+    return `<tr data-id="${esc(r.id)}">
+      <td class="time">${when(r.t)}</td>
+      <td>${esc(r.source_name)}<div class="sub">${esc(r.source_type)}</div></td>
+      <td>${esc(r.event_types.join(", "))}<div class="chips"><span class="chip sev sev-${esc(r.severity)}">${SEV_LABEL[r.severity] || esc(r.severity)}</span><span class="chip ${esc(r.timing)}">${r.timing === "forecast" ? "Forecast" : "Observed"}</span></div></td>
+      <td>${esc(where) || '<span class="sub">Not mapped</span>'}</td>
+      <td><div class="text">${esc(r.text)}</div>${r.red_flags?.length ? `<div class="sub" style="color:var(--bad)">⚠ ${esc(r.red_flags.join("; "))}</div>` : ""}</td>
+      <td><span class="chip ${cls}">${label}</span></td>
+      <td class="acts">
+        ${r.review !== "verified" ? '<button class="btn small" data-act="verified">Verify</button>' : ""}
+        ${r.review !== "rejected" ? '<button class="btn small ghost" data-act="rejected">Reject</button>' : ""}
+        ${r.review ? '<button class="btn small ghost" data-act="pending">Undo</button>' : ""}
+        <button class="btn small danger" data-act="delete">Delete</button>
+      </td></tr>`;
+  }).join("") : `<tr><td colspan="7" class="empty">${pendingOnly && reports.length ? "Nothing awaiting review." : "No reports from users yet. Signed-in users can report events from the live map."}</td></tr>`;
+}
+
+$("pending-only").addEventListener("change", renderReports);
+$("reports").addEventListener("click", async ev => {
+  const btn = ev.target.closest("[data-act]");
+  if (!btn) return;
+  const id = btn.closest("tr").dataset.id, act = btn.dataset.act;
+  if (act === "delete" && armed !== btn) {  // two-step delete: first click arms, second confirms
+    if (armed) armed.textContent = "Delete";
+    armed = btn;
+    btn.textContent = "Confirm delete";
+    return;
+  }
+  btn.disabled = true;
+  try {
+    await post(`/api/admin/reports/${encodeURIComponent(id)}`, act === "delete" ? { delete: true } : { review: act });
+    armed = null;
+    await loadReports();
+  } catch (err) {
+    alertRow(btn, err.message);
+  }
+});
+
+async function loadUsers() {
+  const data = await (await fetch("/api/admin/users")).json();
+  users = data.users;
+  me = data.me;
+  renderUsers();
+}
+
+function renderUsers() {
+  const q = $("user-search").value.trim().toLowerCase();
+  const list = users.filter(u => !q || u.name.toLowerCase().includes(q) || u.email.includes(q));
+  $("c-users").textContent = users.length;
+  $("users").innerHTML = list.length ? list.map(u => {
+    const self = u.id === me;
+    const lock = self ? ' disabled title="You can\'t change your own account here"' : "";
+    return `<tr data-id="${u.id}">
+      <td>${esc(u.name)}${self ? ' <span class="sub">(you)</span>' : ""}</td>
+      <td>${esc(u.email)}</td>
+      <td><span class="chip ${u.role === "admin" ? "info" : ""}">${u.role === "admin" ? "Administrator" : "User"}</span></td>
+      <td><span class="chip ${u.disabled ? "bad" : "ok"}">${u.disabled ? "Disabled" : "Active"}</span></td>
+      <td class="time">${when(u.created)}</td>
+      <td class="acts">
+        <button class="btn small ghost" data-act="role"${lock}>${u.role === "admin" ? "Make user" : "Make admin"}</button>
+        <button class="btn small ${u.disabled ? "" : "danger"}" data-act="disabled"${lock}>${u.disabled ? "Enable" : "Disable"}</button>
+        <button class="btn small ghost" data-act="reset">Reset password</button>
+        ${temps[u.id] ? `<div class="temp">Temporary password: <code>${esc(temps[u.id])}</code> Give it to ${esc(u.name.split(" ")[0])}; it's shown once.</div>` : ""}
+      </td></tr>`;
+  }).join("") : '<tr><td colspan="6" class="empty">No matching users.</td></tr>';
+}
+
+$("user-search").addEventListener("input", renderUsers);
+$("users").addEventListener("click", async ev => {
+  const btn = ev.target.closest("[data-act]");
+  if (!btn || btn.disabled) return;
+  const id = Number(btn.closest("tr").dataset.id), user = users.find(u => u.id === id), act = btn.dataset.act;
+  btn.disabled = true;
+  try {
+    if (act === "reset") {
+      temps[id] = (await post(`/api/admin/users/${id}`, { reset_password: true })).temporary_password;
+    } else {
+      await post(`/api/admin/users/${id}`, act === "role" ? { role: user.role === "admin" ? "user" : "admin" } : { disabled: !user.disabled });
+    }
+    await loadUsers();
+  } catch (err) {
+    alertRow(btn, err.message);
+  }
+});
+
+async function loadSources() {
+  const { sources } = await (await fetch("/api/events")).json();
+  $("sources").innerHTML = Object.entries(sources).map(([name, s]) => `<tr>
+    <td><b>${esc(name)}</b></td>
+    <td><span class="dot ${s.state}"></span>${s.state === "ok" ? "Working" : s.state === "error" ? "Failing" : "Loading"}</td>
+    <td>${s.count ?? "–"}</td>
+    <td class="time">${s.updated ? when(s.updated) : "–"}</td>
+    <td class="sub">${esc(s.error || "")}</td></tr>`).join("");
+}
+
+function alertRow(btn, message) {
+  btn.disabled = false;
+  const note = Object.assign(document.createElement("div"), { className: "sub", textContent: message });
+  note.style.color = "var(--bad)";
+  btn.closest("td").append(note);
+}
+
+document.addEventListener("account", ev => {
+  if (!ev.detail || ev.detail.role !== "admin") return location.replace("/login?next=/admin");
+  loadReports();
+  loadUsers();
+  loadSources();
+  setInterval(loadSources, 30000);
+});
+</script>
+</body>
+</html>
