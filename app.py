@@ -385,7 +385,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")  # no other site may frame the sign-in or admin pages
-        self.send_header("Referrer-Policy", "same-origin")
+        # Other sites see only this site's origin, never a path or query. OpenStreetMap's tile servers refuse
+        # requests with no Referer at all ("403 Access blocked"), which "same-origin" caused on every map.
+        self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         for name, value in headers:
             self.send_header(name, value)
         self.end_headers()
