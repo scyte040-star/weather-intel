@@ -154,6 +154,7 @@ with mock.patch.object(auth, "DB", tmp / "test.db"), mock.patch.object(app, "REP
     assert status_of(raw_post % (b"application/json", b"-1")) == b"400"        # used to hang the thread
     assert status_of(raw_post % (b"text/plain", str(len(body)).encode()) + body) == b"415"  # cross-site form post
     assert status_of(b"GET /?utm=1 HTTP/1.1\r\nHost: x\r\n\r\n") == b"200"
+    assert b"Shelter login" in call("GET", "/")[1] and b'id="feed"' in call("GET", "/map")[1]  # front page, live map
 
     # Accounts
     status, data, sid, headers = call("POST", "/api/signup", {"name": "Asha Rao", "email": "Asha@Example.test", "password": "monsoon-2026"})

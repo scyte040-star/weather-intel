@@ -318,7 +318,7 @@ def structured_report(b):
                               "lat": lat, "lon": lon}]}
 
 
-PAGES = {"/": "index.html", "/login": "auth.html", "/signup": "auth.html", "/admin": "admin.html",
+PAGES = {"/": "home.html", "/map": "index.html", "/login": "auth.html", "/signup": "auth.html", "/admin": "admin.html",
          "/shelter": "shelter.html", "/control": "control.html"}
 PAGE_ROLES = {"/admin": ("admin",), "/control": ("admin",), "/shelter": ("shelter", "admin")}  # pages that need a role
 STATIC = {"/static/base.css": "text/css; charset=utf-8", "/static/account.js": "text/javascript; charset=utf-8",

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weather Intelligence · India</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/static/base.css">
+<style>
+  /* The hero keeps one deep-navy look in both themes, like the sign-in page */
+  .hero { --panel: #e6edf5; position: relative; overflow: hidden; background: #0c1a2b; color: #e6edf5; }
+  .hero::after { content: ""; position: absolute; right: -12%; bottom: -60%; width: 60%; aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+                 background: radial-gradient(circle, color-mix(in srgb, var(--sev-high) 30%, transparent), transparent 65%); }
+  .wrap { max-width: 1160px; margin: 0 auto; padding-inline: 16px; }
+  .bar { display: flex; align-items: center; gap: 12px; padding-block: 16px; }
+  .bar .brand h1 { font-size: 20px; }
+  .bar .brand p { color: rgb(230 237 245 / 62%); }
+  .bar .me { margin-left: auto; font-size: 13.5px; color: rgb(230 237 245 / 80%); }
+  .bar .me a { color: #9cc3ff; font-weight: 600; }
+  .lead { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 40px; align-items: end; padding-block: 48px 56px; }
+  .lead h2 { margin: 0 0 14px; font: 600 clamp(32px, 4.4vw, 54px)/1.04 var(--cond); text-wrap: balance; max-width: 16ch; }
+  .lead p { margin: 0; max-width: 52ch; font-size: 16px; color: rgb(230 237 245 / 75%); }
+  .lead .go { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+  .lead .btn { padding: 11px 18px; font-size: 14.5px; }
+  .lead .btn.ghost { background: transparent; color: #e6edf5; border-color: rgb(230 237 245 / 30%); }
+  .snap { display: grid; gap: 16px; padding: 20px; border: 1px solid rgb(230 237 245 / 14%); border-radius: 14px; background: rgb(255 255 255 / 4%); }
+  .snap .label { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: rgb(230 237 245 / 60%); }
+  .nums { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .nums b { display: block; font: 600 34px/1 var(--cond); font-variant-numeric: tabular-nums; }
+  .nums span { font-size: 12.5px; color: rgb(230 237 245 / 65%); }
+  .latest { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 13.5px; }
+  .latest li { display: grid; grid-template-columns: 10px 1fr; gap: 10px; align-items: baseline; }
+  .latest li::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); transform: translateY(1px); }
+  .latest small { display: block; color: rgb(230 237 245 / 58%); font-size: 12px; }
+
+  .doors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding-block: 36px 20px; }
+  .door { position: relative; display: grid; gap: 12px; align-content: start; padding: 22px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+  .door::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; border-radius: 14px 14px 0 0; background: var(--tone); }
+  .door .kicker { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .door h3 { margin: 0; font: 600 22px/1.15 var(--cond); }
+  .door p { margin: 0; color: var(--muted); font-size: 14px; }
+  .door ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13.5px; display: grid; gap: 4px; }
+  .door .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .door.public { --tone: var(--accent); } .door.shelters { --tone: #2e9e5b; } .door.control { --tone: var(--sev-high); }
+  .foot { padding-block: 20px 40px; color: var(--muted); font-size: 12.5px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  @media (max-width: 900px) {
+    .lead { grid-template-columns: 1fr; gap: 28px; padding-block: 28px 36px; }
+    .doors { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<section class="hero">
+  <div class="wrap">
+    <div class="bar">
+      <a class="brand" href="/"><h1>Weather Intelligence · India</h1><p>Live hazard alerts, shelters and response</p></a>
+      <span class="me" id="me" hidden></span>
+    </div>
+    <div class="lead">
+      <div>
+        <h2>India's weather alerts, shelters and response in one place.</h2>
+        <p>Official warnings from IMD, CWC and state disaster authorities, grouped into events and mapped as they happen, with relief shelters and the space they have left, and a control room that checks everything is in place.</p>
+        <div class="go">
+          <a class="btn" href="/map">Open the live map</a>
+          <a class="btn ghost" href="#choose">Sign in</a>
+        </div>
+      </div>
+      <div class="snap" aria-live="polite">
+        <div class="label">Right now</div>
+        <div class="nums">
+          <div><b id="n-events">–</b><span>active events</span></div>
+          <div><b id="n-severe">–</b><span>severe or worse</span></div>
+          <div><b id="n-shelters">–</b><span>shelters open</span></div>
+          <div><b id="n-free">–</b><span>shelter places free</span></div>
+        </div>
+        <ul class="latest" id="latest"></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main class="wrap">
+  <section class="doors" id="choose" aria-label="Choose how to sign in">
+    <article class="door public">
+      <div class="kicker">For everyone</div>
+      <h3>Public</h3>
+      <p>See what's happening near you. No account needed for the map.</p>
+      <ul><li>Live alerts, filters and event timelines</li><li>Find an open shelter nearby</li><li>With an account: report events and get alerts for your area</li></ul>
+      <div class="acts">
+        <a class="btn" href="/map">Open the live map</a>
+        <a class="btn ghost" href="/login?next=/map">Sign in</a>
+        <a class="btn ghost" href="/signup?next=/map">Create account</a>
+      </div>
+    </article>
+    <article class="door shelters">
+      <div class="kicker">For relief shelters</div>
+      <h3>Shelter operators</h3>
+      <p>Keep your shelter's status up to date so people know where to go.</p>
+      <ul><li>Open or closed, and people staying, in one tap</li><li>Facilities you provide</li><li>Funds and supplies you need</li></ul>
+      <div class="acts">
+        <a class="btn" href="/login?as=shelter&amp;next=/shelter">Shelter login</a>
+        <a class="btn ghost" href="/signup?as=shelter&amp;next=/shelter">Register a shelter</a>
+      </div>
+    </article>
+    <article class="door control">
+      <div class="kicker">For administrators</div>
+      <h3>Control room</h3>
+      <p>Check that everything is in place, and act on what isn't.</p>
+      <ul><li>Readiness checks and shelter coverage</li><li>Approve shelters and review reports</li><li>Manage users and data sources</li></ul>
+      <div class="acts">
+        <a class="btn" href="/login?as=control&amp;next=/control">Control room login</a>
+      </div>
+    </article>
+  </section>
+  <div class="foot"><span>Data: NDMA SACHET (IMD, CWC, state SDMAs), GDACS, USGS, Open-Meteo, OpenStreetMap</span><span id="updated"></span></div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const SEV = ["low", "moderate", "high", "extreme"];
+const HOME = { user: ["/map", "the live map"], shelter: ["/shelter", "my shelters"], admin: ["/control", "the control room"] };
+
+(async () => {
+  try {
+    const { user } = await (await fetch("/api/me")).json();
+    if (user) {
+      const [href, label] = HOME[user.role] || HOME.user;
+      $("me").hidden = false;
+      $("me").innerHTML = `Signed in as ${esc(user.name)} · <a href="${href}">Go to ${label}</a>`;
+    }
+  } catch {}
+})();
+
+async function snapshot() {
+  try {
+    const [ev, sh] = await Promise.all([fetch("/api/events").then(r => r.json()), fetch("/api/shelters").then(r => r.json())]);
+    const open = sh.shelters.filter(s => s.active);
+    $("n-events").textContent = ev.events.length;
+    $("n-severe").textContent = ev.events.filter(e => SEV.indexOf(e.severity) >= 2).length;
+    $("n-shelters").textContent = open.length;
+    $("n-free").textContent = open.reduce((a, s) => a + Math.max(0, s.capacity - s.occupancy), 0).toLocaleString("en-IN");
+    $("latest").innerHTML = ev.events.sort((a, b) => SEV.indexOf(b.severity) - SEV.indexOf(a.severity) || b.last_t - a.last_t).slice(0, 3)
+      .map(e => `<li class="sev-${e.severity}"><span>${esc(e.event_types.join(" · "))}<small>${esc(e.places[0] || "")}${e.states.length ? " — " + esc(e.states[0]) : ""}</small></span></li>`).join("");
+    $("updated").textContent = `Updated ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  } catch { /* the numbers are a preview; every link works without them */ }
+}
+snapshot();
+setInterval(snapshot, 60000);
+</script>
+</body>
+</html>

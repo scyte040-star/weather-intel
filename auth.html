@@ -106,7 +106,7 @@
     </form>
     <p class="switch" id="switch"></p>
     <p class="switch guest" id="as-switch"></p>
-    <p class="switch guest"><a href="/">Continue to the live map without an account</a></p>
+    <p class="switch guest"><a href="/map">Continue to the live map without an account</a></p>
   </div>
 </main>
 
@@ -117,17 +117,20 @@ const SEV = ["low", "moderate", "high", "extreme"];
 const params = new URLSearchParams(location.search);
 // Only same-site paths: "//evil.example" and "https://..." would send people off-site after signing in.
 const shelter = params.get("as") === "shelter";  // the shelter operators' sign-in
-const next = /^\/(?!\/)/.test(params.get("next") || "") ? params.get("next") : shelter ? "/shelter" : "/";
-$("as-switch").innerHTML = shelter
-  ? 'Not running a shelter? <a href="/login">Regular sign in</a>'
+const control = params.get("as") === "control";  // administrators only; no public sign-up
+const next = /^\/(?!\/)/.test(params.get("next") || "") ? params.get("next") : shelter ? "/shelter" : control ? "/control" : "/map";
+$("as-switch").innerHTML = shelter || control
+  ? `Not ${shelter ? "running a shelter" : "an administrator"}? <a href="/login">Regular sign in</a>`
   : 'Run a relief shelter? <a href="/login?as=shelter&amp;next=/shelter">Shelter operator sign in</a>';
 
 function setMode(mode) {
-  const signup = mode === "signup";
-  const titles = shelter ? ["Register as a shelter operator", "Shelter operator sign in"] : ["Create an account", "Sign in"];
+  const signup = mode === "signup" && !control;
+  const titles = shelter ? ["Register as a shelter operator", "Shelter operator sign in"]
+    : control ? ["", "Control room sign in"] : ["Create an account", "Sign in"];
   document.title = `${signup ? titles[0] : titles[1]} · Weather Intelligence`;
   $("title").textContent = signup ? titles[0] : titles[1];
-  $("subtitle").textContent = shelter
+  $("subtitle").textContent = control ? "For administrators. These accounts are set up by the site owner, so there's no sign-up here."
+    : shelter
     ? (signup ? "List your relief shelter, keep its space and facilities up to date, and ask for funds or supplies. It appears on the map once the control room approves it."
               : "Sign in to update your shelters: open or closed, people staying, facilities and needs.")
     : signup ? "Report weather events from where you are, and get alerts for the area you care about."
@@ -138,7 +141,7 @@ function setMode(mode) {
   $("forgot-note").hidden = true;
   $("password").autocomplete = signup ? "new-password" : "current-password";
   $("submit").textContent = signup ? "Create account" : "Sign in";
-  $("switch").innerHTML = signup
+  $("switch").innerHTML = control ? "" : signup
     ? `Already have an account? <a href="/login${location.search}" data-mode="login">Sign in</a>`
     : `New here? <a href="/signup${location.search}" data-mode="signup">Create an account</a>`;
   $("msg").textContent = "";
@@ -178,6 +181,7 @@ $("form").addEventListener("submit", async ev => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+    if (control && data.user.role !== "admin") throw new Error("You're signed in, but this account isn't an administrator. Use the regular sign-in or the shelter login instead.");
     location.href = next;
   } catch (err) {
     fail(err.message);
@@ -208,7 +212,7 @@ async function snapshot() {
 (async () => {
   try {
     const { user } = await (await fetch("/api/me")).json();
-    if (user) return location.replace(next);  // already signed in
+    if (user && (!control || user.role === "admin")) return location.replace(next);  // already signed in
   } catch {}
   setMode(location.pathname === "/signup" ? "signup" : "login");
   snapshot();
