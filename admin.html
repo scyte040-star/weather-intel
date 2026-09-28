@@ -105,6 +105,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 const when = t => new Date(t * 1000).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const SEV_LABEL = { low: "Minor", moderate: "Moderate", high: "Severe", extreme: "Extreme" };
 const REVIEW = { verified: ["Verified", "ok"], rejected: ["Rejected", "bad"], null: ["Awaiting review", "warn"] };
+const ROLES = { user: "User", shelter: "Shelter operator", admin: "Administrator" };
 const post = async (url, body) => {
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const data = await res.json();
@@ -189,11 +190,10 @@ function renderUsers() {
     return `<tr data-id="${u.id}">
       <td>${esc(u.name)}${self ? ' <span class="sub">(you)</span>' : ""}</td>
       <td>${esc(u.email)}</td>
-      <td><span class="chip ${u.role === "admin" ? "info" : ""}">${u.role === "admin" ? "Administrator" : "User"}</span></td>
+      <td><select data-act="role" aria-label="Role for ${esc(u.name)}"${lock}>${Object.entries(ROLES).map(([r, label]) => `<option value="${r}"${r === u.role ? " selected" : ""}>${label}</option>`).join("")}</select></td>
       <td><span class="chip ${u.disabled ? "bad" : "ok"}">${u.disabled ? "Disabled" : "Active"}</span></td>
       <td class="time">${when(u.created)}</td>
       <td class="acts">
-        <button class="btn small ghost" data-act="role"${lock}>${u.role === "admin" ? "Make user" : "Make admin"}</button>
         <button class="btn small ${u.disabled ? "" : "danger"}" data-act="disabled"${lock}>${u.disabled ? "Enable" : "Disable"}</button>
         <button class="btn small ghost" data-act="reset">Reset password</button>
         ${temps[u.id] ? `<div class="temp">Temporary password: <code>${esc(temps[u.id])}</code> Give it to ${esc(u.name.split(" ")[0])}; it's shown once.</div>` : ""}
@@ -202,16 +202,27 @@ function renderUsers() {
 }
 
 $("user-search").addEventListener("input", renderUsers);
+$("users").addEventListener("change", async ev => {
+  const sel = ev.target.closest('select[data-act="role"]');
+  if (!sel) return;
+  sel.disabled = true;
+  try {
+    await post(`/api/admin/users/${sel.closest("tr").dataset.id}`, { role: sel.value });
+    await loadUsers();
+  } catch (err) {
+    alertRow(sel, err.message);
+  }
+});
 $("users").addEventListener("click", async ev => {
-  const btn = ev.target.closest("[data-act]");
+  const btn = ev.target.closest("button[data-act]");  // the role dropdown has its own change handler
   if (!btn || btn.disabled) return;
   const id = Number(btn.closest("tr").dataset.id), user = users.find(u => u.id === id), act = btn.dataset.act;
   btn.disabled = true;
   try {
     if (act === "reset") {
       temps[id] = (await post(`/api/admin/users/${id}`, { reset_password: true })).temporary_password;
-    } else {
-      await post(`/api/admin/users/${id}`, act === "role" ? { role: user.role === "admin" ? "user" : "admin" } : { disabled: !user.disabled });
+    } else if (act === "disabled") {
+      await post(`/api/admin/users/${id}`, { disabled: !user.disabled });
     }
     await loadUsers();
   } catch (err) {

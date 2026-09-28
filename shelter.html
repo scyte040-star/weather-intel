@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My shelters · Weather Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="/static/base.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  body { display: grid; grid-template-rows: auto 1fr; }
+  @media (prefers-color-scheme: dark) {
+    .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.82) contrast(.92) saturate(.55); }
+  }
+  main { display: grid; grid-template-columns: minmax(0, 560px) 1fr; min-height: 0; }
+  .side { overflow: auto; padding: 20px 16px 40px; display: grid; gap: 16px; align-content: start; background: var(--bg); }
+  #map { min-height: 0; border-left: 1px solid var(--line); }
+  .head { display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; }
+  .head h2 { margin: 0; font: 600 26px/1.1 var(--cond); }
+  .head p { margin: 4px 0 0; color: var(--muted); font-size: 13.5px; max-width: 52ch; }
+  .box { display: grid; gap: 12px; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  .box h3 { margin: 0; font: 600 18px/1.2 var(--cond); }
+  .box p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .shelter { position: relative; overflow: hidden; padding-left: 20px; }
+  .shelter::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--a); }
+  .shelter .top-row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .facts { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+  .quick { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: end; padding: 12px; border-radius: 10px; background: var(--panel-2); }
+  .seg { display: inline-flex; justify-self: start; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { padding: 7px 12px; border: 0; background: var(--panel); color: var(--muted); font-weight: 600; font-size: 13px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+  .stepper { display: flex; gap: 4px; align-items: center; }
+  .stepper input { width: 90px; text-align: center; font-family: var(--mono); }
+  .stepper button { width: 34px; padding: 7px 0; }
+  .note { padding: 8px 10px; border-radius: 8px; background: var(--bad-soft); color: var(--bad); font-size: 13px; }
+  .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+  form.box { gap: 14px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .facs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+  .facs label { display: flex; gap: 8px; align-items: center; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px;
+                background: var(--panel-2); font-size: 13px; letter-spacing: 0; text-transform: none; font-weight: 400; color: var(--text); cursor: pointer; }
+  .facs input, .check input { width: auto; margin: 0; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13.5px; }
+  fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
+  legend { padding: 0; font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+  .empty { padding: 24px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; }
+  @media (max-width: 900px) {
+    body { height: auto; }
+    main { grid-template-columns: 1fr; }
+    #map { height: 45vh; order: -1; border-left: 0; }
+    .side { overflow: visible; }
+    .quick { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/">
+    <h1>Weather Intelligence · India</h1>
+    <p>Shelter operators</p>
+  </a>
+  <div class="push" id="account"></div>
+</header>
+
+<main>
+  <div class="side">
+    <div class="head">
+      <div>
+        <h2>My shelters</h2>
+        <p>Keep people informed during an emergency: whether you're open, how much space is left, what you provide, and what you need.</p>
+      </div>
+      <button class="btn" id="add">Add a shelter</button>
+    </div>
+
+    <div class="box" id="optin" hidden>
+      <h3>Run a relief shelter?</h3>
+      <p>Your account is a regular account. Switch it to a shelter operator account to register shelters. Your reports and alerts stay as they are.</p>
+      <div><button class="btn" id="become">Switch to a shelter operator account</button></div>
+      <p class="msg" id="optin-msg"></p>
+    </div>
+
+    <form class="box" id="form" hidden novalidate>
+      <h3 id="form-title">Add a shelter</h3>
+      <label class="field">Shelter name <input id="f-name" maxlength="120" placeholder="e.g. Government Higher Secondary School, Majuli"></label>
+      <div class="two">
+        <label class="field">Type <select id="f-type"></select></label>
+        <label class="field">State <span class="hint">Optional; found from the map point</span><input id="f-state" maxlength="60"></label>
+      </div>
+      <label class="field">Address <input id="f-address" maxlength="200" placeholder="Street, village or ward, district"></label>
+      <div class="field">Location on the map <div class="picker" id="f-picker"></div></div>
+      <div class="two">
+        <label class="field">Capacity (people) <input id="f-capacity" type="number" min="1" max="100000" inputmode="numeric"></label>
+        <label class="field">Staying now <input id="f-occupancy" type="number" min="0" max="100000" inputmode="numeric" value="0"></label>
+      </div>
+      <label class="check"><input type="checkbox" id="f-active" checked> Open and taking people now</label>
+      <fieldset>
+        <legend>Facilities you provide</legend>
+        <div class="facs" id="f-facs"></div>
+      </fieldset>
+      <div class="two">
+        <label class="field">Funds needed (₹) <span class="hint">0 if none</span><input id="f-funds" type="number" min="0" max="1000000000" inputmode="numeric" value="0"></label>
+        <label class="field">What the funds are for <input id="f-funds-note" maxlength="300" placeholder="e.g. Blankets and dry rations"></label>
+      </div>
+      <label class="field">Supplies needed <textarea id="f-supplies" maxlength="500" placeholder="e.g. 200 blankets, drinking water, sanitary pads, ORS"></textarea></label>
+      <label class="field">Public contact number <span class="hint">Shown on the public map so people can call ahead</span>
+        <input id="f-phone" type="tel" maxlength="20" placeholder="+91 98765 43210"></label>
+      <label class="field">Notes <textarea id="f-notes" maxlength="1000" placeholder="Directions, entry rules, languages spoken…"></textarea></label>
+      <p class="msg" id="f-msg" role="status"></p>
+      <div class="acts"><button class="btn" id="f-save">Save shelter</button><button type="button" class="btn ghost" id="f-cancel">Cancel</button></div>
+      <p class="hint" style="margin:0;color:var(--muted);font-size:12.5px">New shelters are checked by the control room before they appear on the public map.</p>
+    </form>
+
+    <div id="list" aria-live="polite"></div>
+  </div>
+  <div id="map" aria-label="Map of your shelters"></div>
+</main>
+
+<script src="/static/account.js"></script>
+<script src="/static/picker.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const post = async (url, body) => {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  return data;
+};
+const inr = n => "₹" + Number(n).toLocaleString("en-IN");
+const ago = t => { const m = Math.round((Date.now() / 1000 - t) / 60); return m < 1 ? "just now" : m < 60 ? `${m}m ago` : m < 2880 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`; };
+const avail = s => !s.active ? "closed" : s.occupancy >= s.capacity ? "full" : s.occupancy >= 0.75 * s.capacity ? "nearly" : "space";
+const STATUS = { pending: ["Awaiting approval", "warn"], approved: ["Live on the map", "ok"], rejected: ["Not approved", "bad"] };
+let mine = [], editing = null, armed = null;
+const draft = {};  // shelter id -> {active, occupancy} being edited in the quick-update row
+
+const map = L.map("map", { zoomSnap: 0.5 }).setView([22.8, 80.5], 5);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+}).addTo(map);
+new ResizeObserver(() => map.invalidateSize()).observe($("map"));
+const pins = L.layerGroup().addTo(map);
+const picker = makePicker($("f-picker"), map);
+
+async function load() {
+  const data = await (await fetch("/api/my/shelters")).json();
+  if ($("f-type").options.length === 0) {
+    $("f-type").innerHTML = data.types.map(t => `<option>${esc(t)}</option>`).join("");
+    $("f-facs").innerHTML = data.facilities.map(f => `<label><input type="checkbox" value="${esc(f)}"> ${esc(f)}</label>`).join("");
+  }
+  mine = data.shelters;
+  render();
+}
+
+function render() {
+  pins.clearLayers();
+  for (const s of mine) {
+    L.marker([s.lat, s.lon], { icon: L.divIcon({ className: "", html: `<div class="shelter-pin avail-${avail(s)}">🏠</div>`, iconSize: [26, 26] }), title: s.name })
+      .bindTooltip(esc(s.name)).addTo(pins);
+  }
+  if (mine.length && !editing) map.fitBounds(L.latLngBounds(mine.map(s => [s.lat, s.lon])).pad(0.5), { maxZoom: 11 });
+  $("list").innerHTML = mine.length ? mine.map(s => {
+    const d = draft[s.id] || { active: s.active, occupancy: s.occupancy };
+    const [label, cls] = STATUS[s.status];
+    const pct = Math.min(100, Math.round(100 * s.occupancy / s.capacity));
+    return `<article class="box shelter avail-${avail(s)}" data-id="${s.id}">
+      <div class="top-row"><h3>${esc(s.name)}</h3><span class="chips"><span class="chip ${cls}">${label}</span>${s.demo ? '<span class="chip sample">Sample</span>' : ""}</span></div>
+      <div class="facts"><span>${esc(s.type)} · ${esc(s.address)}</span><span>Updated ${ago(s.updated)}</span></div>
+      ${s.status === "rejected" && s.review_note ? `<div class="note">Control room: ${esc(s.review_note)}</div>` : ""}
+      <div class="facts"><span>${s.occupancy.toLocaleString("en-IN")} of ${s.capacity.toLocaleString("en-IN")} places taken</span><span>${pct}% full</span></div>
+      <div class="meter avail-${avail(s)}"><i style="width:${pct}%"></i></div>
+      <div class="quick">
+        <div class="field">Status<div class="seg" role="group" aria-label="Open or closed">
+          <button type="button" data-q="open" aria-pressed="${d.active}">Open</button><button type="button" data-q="closed" aria-pressed="${!d.active}">Closed</button></div></div>
+        <div class="field">People staying now<div class="stepper">
+          <button type="button" class="btn small ghost" data-q="-10" aria-label="10 fewer">−10</button>
+          <button type="button" class="btn small ghost" data-q="-1" aria-label="1 fewer">−</button>
+          <input type="number" min="0" max="100000" value="${d.occupancy}" data-q="count" aria-label="People staying now">
+          <button type="button" class="btn small ghost" data-q="1" aria-label="1 more">+</button>
+          <button type="button" class="btn small ghost" data-q="10" aria-label="10 more">+10</button></div></div>
+        <button type="button" class="btn" data-q="save">Update</button>
+      </div>
+      ${s.funds_needed ? `<div class="facts"><span>Asking for ${inr(s.funds_needed)}: ${esc(s.funds_note)}</span></div>` : ""}
+      <p class="msg" data-msg></p>
+      <div class="acts"><button type="button" class="btn small ghost" data-q="edit">Edit details</button>
+        <button type="button" class="btn small danger" data-q="delete">Delete</button></div>
+    </article>`;
+  }).join("") : `<div class="empty">No shelters yet. Use "Add a shelter" to register one.</div>`;
+}
+
+$("list").addEventListener("click", async ev => {
+  const btn = ev.target.closest("button[data-q]");
+  if (!btn) return;
+  const card = btn.closest("[data-id]"), id = Number(card.dataset.id), s = mine.find(x => x.id === id), q = btn.dataset.q;
+  const d = draft[id] = draft[id] || { active: s.active, occupancy: s.occupancy };
+  const count = card.querySelector('input[data-q="count"]'), msg = card.querySelector("[data-msg]");
+  d.occupancy = Math.max(0, Number(count.value) || 0);
+  if (q === "open" || q === "closed") {
+    d.active = q === "open";
+    card.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String((b.dataset.q === "open") === d.active)));
+  } else if (/^-?\d+$/.test(q)) {
+    count.value = d.occupancy = Math.max(0, d.occupancy + Number(q));
+  } else if (q === "save") {
+    btn.disabled = true;
+    try {
+      await post(`/api/my/shelters/${id}/quick`, d);
+      delete draft[id];
+      await load();
+      $("list").querySelector(`[data-id="${id}"] [data-msg]`).className = "msg ok";
+      $("list").querySelector(`[data-id="${id}"] [data-msg]`).textContent = "Updated. The public map shows the new numbers.";
+    } catch (err) {
+      msg.className = "msg err";
+      msg.textContent = err.message;
+      btn.disabled = false;
+    }
+  } else if (q === "edit") {
+    openForm(s);
+  } else if (q === "delete") {
+    if (armed !== btn) {  // two-step delete: first click arms, second confirms
+      armed = btn;
+      btn.textContent = "Confirm delete";
+      return;
+    }
+    await post(`/api/my/shelters/${id}/delete`, {});
+    armed = null;
+    await load();
+  }
+});
+$("list").addEventListener("input", ev => {
+  const card = ev.target.closest("[data-id]");
+  if (!card || ev.target.dataset.q !== "count") return;
+  const id = Number(card.dataset.id), s = mine.find(x => x.id === id);
+  (draft[id] = draft[id] || { active: s.active, occupancy: s.occupancy }).occupancy = Math.max(0, Number(ev.target.value) || 0);
+});
+
+function openForm(s) {
+  editing = s || null;
+  $("form").hidden = false;
+  $("form-title").textContent = s ? `Edit ${s.name}` : "Add a shelter";
+  $("f-msg").textContent = "";
+  const v = (id, val) => { $(id).value = val ?? ""; };
+  v("f-name", s?.name); v("f-type", s?.type || "Relief camp"); v("f-state", s?.state); v("f-address", s?.address);
+  v("f-capacity", s?.capacity); v("f-occupancy", s?.occupancy ?? 0); v("f-funds", s?.funds_needed ?? 0); v("f-funds-note", s?.funds_note);
+  v("f-supplies", s?.supplies); v("f-phone", s?.phone); v("f-notes", s?.notes);
+  $("f-active").checked = s ? s.active : true;
+  $("f-facs").querySelectorAll("input").forEach(i => { i.checked = Boolean(s?.facilities.includes(i.value)); });
+  picker.set(s ? { lat: s.lat, lon: s.lon, label: s.address } : null, Boolean(s));
+  if (s) map.flyTo([s.lat, s.lon], 12, { duration: .6 });
+  $("form").scrollIntoView({ behavior: "smooth", block: "start" });
+  $("f-name").focus({ preventScroll: true });
+}
+$("add").addEventListener("click", () => openForm(null));
+$("f-cancel").addEventListener("click", () => { $("form").hidden = true; editing = null; picker.clearMarker(); });
+
+$("form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const msg = $("f-msg"), loc = picker.value;
+  msg.className = "msg err";
+  if (!loc) return msg.textContent = "Choose where the shelter is.";
+  const body = {
+    name: $("f-name").value, type: $("f-type").value, state: $("f-state").value, address: $("f-address").value,
+    lat: loc.lat, lon: loc.lon, capacity: $("f-capacity").value, occupancy: $("f-occupancy").value, active: $("f-active").checked,
+    facilities: [...$("f-facs").querySelectorAll("input:checked")].map(i => i.value),
+    funds_needed: $("f-funds").value, funds_note: $("f-funds-note").value, supplies: $("f-supplies").value,
+    phone: $("f-phone").value, notes: $("f-notes").value,
+  };
+  $("f-save").disabled = true;
+  try {
+    await post(editing ? `/api/my/shelters/${editing.id}` : "/api/my/shelters", body);
+    $("form").hidden = true;
+    editing = null;
+    picker.clearMarker();
+    await load();
+  } catch (err) {
+    msg.textContent = err.message;
+  } finally {
+    $("f-save").disabled = false;
+  }
+});
+
+$("become").addEventListener("click", async () => {
+  try {
+    await post("/api/me/role", { role: "shelter" });
+    location.reload();
+  } catch (err) {
+    $("optin-msg").className = "msg err";
+    $("optin-msg").textContent = err.message;
+  }
+});
+
+document.addEventListener("account", ev => {
+  const me = ev.detail;
+  if (!me) return location.replace("/login?as=shelter&next=/shelter");
+  const operator = me.role !== "user";
+  $("optin").hidden = operator;
+  $("add").hidden = !operator;
+  if (operator) load();
+});
+</script>
+</body>
+</html>

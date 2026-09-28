@@ -11,6 +11,7 @@ from unittest import mock
 import app
 import auth
 import feeds
+import shelters
 
 T = 1_000_000
 
@@ -125,6 +126,7 @@ with mock.patch.object(auth, "DB", tmp / "test.db"), mock.patch.object(app, "REP
         mock.patch.object(app, "reverse_geocode", return_value=["Andheri", "Maharashtra"]), \
         mock.patch.dict(os.environ, {"ADMIN_EMAIL": ADMIN, "ADMIN_PASSWORD": ADMIN_PW}):
     auth.init()
+    shelters.init()
     srv = app.ThreadingHTTPServer(("127.0.0.1", 0), app.Handler)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     port = srv.server_address[1]
@@ -200,6 +202,47 @@ with mock.patch.object(auth, "DB", tmp / "test.db"), mock.patch.object(app, "REP
     assert mine and mine[0]["status"] == "verified" and mine[0]["why"] == "Verified by a moderator"
     call("POST", f"/api/admin/reports/{r['id']}", {"review": "rejected"}, sid=admin_sid)
     assert not [e for e in call("GET", "/api/events")[1]["events"] if e["id"] == r["id"]]
+
+    # Shelters: operators register them, the control room approves them, and only approved ones are public
+    status, data, op_sid, _ = call("POST", "/api/signup", {"name": "Ravi Camp", "email": "ravi@example.test", "password": "shelter-2026", "role": "shelter"})
+    assert status == 201 and data["user"]["role"] == "shelter"
+    _, _, op2_sid, _ = call("POST", "/api/signup", {"name": "Other Op", "email": "other@example.test", "password": "shelter-2026", "role": "shelter"})
+    camp = {"name": "Pune relief camp", "type": "Relief camp", "address": "Shivajinagar, Pune", "lat": 18.52, "lon": 73.86,
+            "capacity": 200, "occupancy": 150, "facilities": ["Food", "Beds"], "active": True,
+            "funds_needed": 50000, "funds_note": "Blankets", "phone": "+91 98765 43210"}
+    assert call("POST", "/api/my/shelters", camp, sid=sid)[0] == 403                       # a regular account can't
+    assert call("POST", "/api/my/shelters", {**camp, "funds_note": ""}, sid=op_sid)[0] == 400  # funds need a purpose
+    assert call("POST", "/api/my/shelters", {**camp, "phone": "call me"}, sid=op_sid)[0] == 400
+    assert call("POST", "/api/my/shelters", {**camp, "lat": 51.5, "lon": -0.1}, sid=op_sid)[0] == 400
+    assert call("POST", "/api/my/shelters", {**camp, "facilities": ["Spa"]}, sid=op_sid)[0] == 400
+    status, data, _, _ = call("POST", "/api/my/shelters", camp, sid=op_sid)
+    shelter_id = data["shelter"]["id"]
+    assert status == 201 and data["shelter"]["status"] == "pending" and data["shelter"]["state"] == "Maharashtra"
+    assert call("GET", "/api/shelters")[1]["shelters"] == []                               # hidden until approved
+    assert call("POST", f"/api/my/shelters/{shelter_id}/quick", {"active": False, "occupancy": 0}, sid=op2_sid)[0] == 404
+    assert call("POST", f"/api/admin/shelters/{shelter_id}", {"status": "approved"}, sid=op_sid)[0] == 403
+    assert call("POST", f"/api/admin/shelters/{shelter_id}", {"status": "approved"}, sid=admin_sid)[0] == 200
+    public = call("GET", "/api/shelters")[1]["shelters"]
+    assert [s["name"] for s in public] == ["Pune relief camp"] and "owner_id" not in public[0] and "review_note" not in public[0]
+    quick = call("POST", f"/api/my/shelters/{shelter_id}/quick", {"active": True, "occupancy": 195}, sid=op_sid)[1]["shelter"]
+    assert quick["occupancy"] == 195 and quick["active"]
+
+    # Control room: a severe event ~120 km from the only open shelter is flagged; the full shelter is too
+    call("POST", "/api/reports", {**report, "severity": "extreme"}, sid=op_sid)  # Mumbai
+    assert call("GET", "/api/control", sid=op_sid)[0] == 403 and call("GET", "/control", sid=sid)[0] == 403
+    assert call("GET", "/control", sid=admin_sid)[0] == 200
+    room = call("GET", "/api/control", sid=admin_sid)[1]
+    checks = {c["title"]: c["state"] for c in room["checks"]}
+    assert checks["Shelter coverage"] == "fail" and checks["Shelter capacity"] == "warn", checks
+    assert room["uncovered"] and 100 < room["uncovered"][0]["nearest_km"] < 140 and room["summary"]["beds_free"] == 5
+    assert room["summary"]["funds"] == 50000
+
+    # The shelter page: sign-in first; a regular account sees the opt-in and can switch
+    assert call("GET", "/shelter")[3]["Location"].startswith("/login?as=shelter")
+    assert call("GET", "/shelter", sid=sid)[0] == 200
+    assert call("POST", "/api/me/role", {"role": "admin"}, sid=sid)[0] == 400
+    assert call("POST", "/api/my/shelters/{}/delete".format(shelter_id), {}, sid=op_sid)[0] == 200
+    assert call("GET", "/api/shelters")[1]["shelters"] == []
 
     # Password change signs out other devices; a reset gives a one-time password; disabling ends sessions
     assert call("POST", "/api/me/password", {"current": "monsoon-2026", "new": "new-monsoon-2026"}, sid=sid)[0] == 200

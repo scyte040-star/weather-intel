@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control room · Weather Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="/static/base.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  @media (prefers-color-scheme: dark) {
+    .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.82) contrast(.92) saturate(.55); }
+  }
+  main { max-width: 1320px; margin: 0 auto; padding: 18px 16px 48px; display: grid; gap: 18px; }
+  .status { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); }
+  .status .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--muted); flex: none; }
+  .status.ok .dot { background: var(--ok); box-shadow: 0 0 0 5px var(--ok-soft); }
+  .status.warn .dot { background: var(--sev-moderate); box-shadow: 0 0 0 5px var(--warn-soft); }
+  .status.fail .dot { background: var(--bad); box-shadow: 0 0 0 5px var(--bad-soft); }
+  .status h2 { margin: 0; font: 600 22px/1.15 var(--cond); }
+  .status p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .status .when { margin-left: auto; font: 12px var(--mono); color: var(--muted); white-space: nowrap; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line);
+          border-radius: 12px; overflow: hidden; }
+  .kpi { background: var(--panel); padding: 12px 14px; min-width: 0; }
+  .kpi .label { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+  .kpi .value { font: 600 26px/1.15 var(--cond); font-variant-numeric: tabular-nums; }
+  .kpi .sub { font-size: 12px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: minmax(0, 420px) 1fr; gap: 18px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .card h3 { margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line); font: 600 16px/1.2 var(--cond); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .card h3 .sub { font: 400 12.5px var(--sans); color: var(--muted); }
+  .checks { list-style: none; margin: 0; padding: 0; }
+  .checks li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .checks li:last-child { border-bottom: 0; }
+  .checks .icon { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font: 700 12px var(--sans); color: #fff; }
+  .checks .ok .icon { background: var(--ok); } .checks .warn .icon { background: var(--sev-moderate); } .checks .fail .icon { background: var(--bad); }
+  .checks b { display: block; font-size: 14px; }
+  .checks span { font-size: 13px; color: var(--muted); }
+  .checks a { font-size: 12.5px; font-weight: 600; }
+  #map { height: 100%; min-height: 380px; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { padding: 9px 12px; background: var(--panel-2); border-bottom: 1px solid var(--line); text-align: left; font-size: 11px; font-weight: 600;
+       letter-spacing: .07em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td .sub { color: var(--muted); font-size: 12px; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.time { font: 12px var(--mono); color: var(--muted); white-space: nowrap; }
+  td .meter { width: 110px; margin-top: 4px; }
+  td.acts { white-space: nowrap; }
+  td.acts input { width: 200px; padding: 5px 8px; font-size: 12.5px; margin-right: 4px; }
+  .stale { color: var(--warn); font-weight: 600; }
+  .filters { display: flex; gap: 4px; flex-wrap: wrap; }
+  .filters button { padding: 4px 10px; border: 1px solid var(--line); border-radius: 99px; background: var(--panel-2); color: var(--muted); font-size: 12.5px; cursor: pointer; }
+  .filters button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .empty { padding: 22px 16px; text-align: center; color: var(--muted); }
+  .dot-src { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--muted); }
+  .dot-src.ok { background: var(--ok); } .dot-src.error { background: var(--bad); }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } #map { height: 50vh; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/">
+    <h1>Weather Intelligence · India</h1>
+    <p>Control room</p>
+  </a>
+  <div class="push" id="account"></div>
+</header>
+
+<main>
+  <section class="status" id="status" aria-live="polite">
+    <span class="dot" aria-hidden="true"></span>
+    <div><h2 id="status-title">Checking…</h2><p id="status-sub">Running the readiness checks</p></div>
+    <span class="when" id="when"></span>
+  </section>
+
+  <section class="kpis" aria-label="Key figures">
+    <div class="kpi"><div class="label">Active events</div><div class="value" id="k-events">–</div><div class="sub" id="k-severe"></div></div>
+    <div class="kpi"><div class="label">Open shelters</div><div class="value" id="k-open">–</div><div class="sub" id="k-shelters"></div></div>
+    <div class="kpi"><div class="label">Places free</div><div class="value" id="k-beds">–</div><div class="sub" id="k-occ"></div></div>
+    <div class="kpi"><div class="label">Funds requested</div><div class="value" id="k-funds">–</div><div class="sub">by approved shelters</div></div>
+    <div class="kpi"><div class="label">Waiting on you</div><div class="value" id="k-waiting">–</div><div class="sub" id="k-waiting-sub"></div></div>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <h3>Readiness checks <span class="sub">every 30 s</span></h3>
+      <ul class="checks" id="checks"></ul>
+    </section>
+    <section class="card">
+      <h3>Severe events and shelter coverage <span class="sub">Rings: 50 km around each open shelter</span></h3>
+      <div id="map" aria-label="Map of severe events and shelters"></div>
+    </section>
+  </div>
+
+  <section class="card" id="uncovered-card">
+    <h3>Severe events without an open shelter nearby <span class="sub" id="uncovered-count"></span></h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Event</th><th>Where</th><th>Severity</th><th>Nearest open shelter</th><th></th></tr></thead>
+      <tbody id="uncovered"></tbody>
+    </table></div>
+  </section>
+
+  <section class="card" id="shelters-card">
+    <h3>Shelters
+      <span class="filters" role="group" aria-label="Show">
+        <button data-f="attention" aria-pressed="true">Needs attention</button>
+        <button data-f="pending" aria-pressed="false">Awaiting approval</button>
+        <button data-f="all" aria-pressed="false">All</button>
+      </span>
+    </h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Shelter</th><th>Approval</th><th>Now</th><th>Occupancy</th><th>Needs</th><th>Updated</th><th>Actions</th></tr></thead>
+      <tbody id="shelters"></tbody>
+    </table></div>
+  </section>
+
+  <section class="card" id="sources-card">
+    <h3>Live data sources</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Source</th><th>Status</th><th>Active reports</th><th>Last updated</th><th>Details</th></tr></thead>
+      <tbody id="sources"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<script src="/static/account.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const post = async (url, body) => {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  return data;
+};
+const n = v => Number(v).toLocaleString("en-IN");
+const inr = v => "₹" + n(v);
+const ago = t => { const m = Math.round((Date.now() / 1000 - t) / 60); return m < 1 ? "just now" : m < 60 ? `${m}m ago` : m < 2880 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`; };
+const avail = s => !s.active ? "closed" : s.occupancy >= s.capacity ? "full" : s.occupancy >= 0.75 * s.capacity ? "nearly" : "space";
+const SEV_LABEL = { low: "Minor", moderate: "Moderate", high: "Severe", extreme: "Extreme" };
+const APPROVAL = { pending: ["Awaiting approval", "warn"], approved: ["Approved", "ok"], rejected: ["Rejected", "bad"] };
+const ICON = { ok: "✓", warn: "!", fail: "×" };
+let data = null, filter = "attention", rejecting = null;
+
+const map = L.map("map", { zoomSnap: 0.5 }).setView([22.8, 80.5], 4.5);
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+}).addTo(map);
+new ResizeObserver(() => map.invalidateSize()).observe($("map"));
+const rings = L.layerGroup().addTo(map), pins = L.layerGroup().addTo(map);
+const markers = {};
+
+async function load() {
+  try {
+    data = await (await fetch("/api/control")).json();
+    render();
+  } catch {
+    $("status-title").textContent = "Can't reach the server";
+    $("status").className = "status fail";
+  }
+}
+
+function render() {
+  const { checks, summary: s } = data;
+  const fails = checks.filter(c => c.state === "fail").length, warns = checks.filter(c => c.state === "warn").length;
+  $("status").className = `status ${fails ? "fail" : warns ? "warn" : "ok"}`;
+  $("status-title").textContent = fails + warns ? `${fails + warns} thing${fails + warns === 1 ? " needs" : "s need"} attention` : "Everything is in place";
+  $("status-sub").textContent = `${checks.length - fails - warns} of ${checks.length} checks passing`;
+  $("when").textContent = `Checked ${new Date(data.now * 1000).toLocaleTimeString()}`;
+
+  $("k-events").textContent = n(s.events);
+  $("k-severe").textContent = `${n(s.severe)} severe or worse`;
+  $("k-open").textContent = n(s.open);
+  $("k-shelters").textContent = `of ${n(s.shelters)} approved`;
+  $("k-beds").textContent = n(s.beds_free);
+  $("k-occ").textContent = s.capacity ? `${Math.round(100 * s.occupancy / s.capacity)}% of ${n(s.capacity)} places taken` : "No open shelters";
+  $("k-funds").textContent = inr(s.funds);
+  $("k-waiting").textContent = n(s.pending + s.reports_waiting);
+  const count = (k, word) => `${n(k)} ${word}${k === 1 ? "" : "s"}`;
+  $("k-waiting-sub").textContent = `${count(s.pending, "shelter")}, ${count(s.reports_waiting, "report")}`;
+
+  $("checks").innerHTML = checks.map(c => `<li class="${c.state}"><span class="icon" aria-label="${c.state}">${ICON[c.state]}</span>
+    <div><b>${esc(c.title)}</b><span>${esc(c.detail)}</span>
+    ${c.state !== "ok" && c.target ? ` <a href="${c.target === "reports" ? "/admin" : `#${c.target}-card`}" data-target="${c.target}">${c.target === "reports" ? "Open admin" : "Show"}</a>` : ""}</div></li>`).join("");
+
+  // Map: rings around open shelters, then shelters and severe events
+  rings.clearLayers();
+  pins.clearLayers();
+  for (const sh of data.shelters.filter(x => x.status === "approved")) {
+    if (sh.active) L.circle([sh.lat, sh.lon], { radius: 50000, color: "#2e9e5b", weight: 1, fillOpacity: 0.07, interactive: false }).addTo(rings);
+    markers[`s${sh.id}`] = L.marker([sh.lat, sh.lon], { icon: L.divIcon({ className: "", html: `<div class="shelter-pin avail-${avail(sh)}">🏠</div>`, iconSize: [24, 24] }) })
+      .bindPopup(`<b>${esc(sh.name)}</b><br>${n(sh.occupancy)} of ${n(sh.capacity)} places taken · ${sh.active ? "open" : "closed"}`).addTo(pins);
+  }
+  const uncoveredIds = new Set(data.uncovered.map(e => e.id));
+  for (const e of data.severe) {
+    markers[`e${e.id}`] = L.circleMarker([e.lat, e.lon], { radius: uncoveredIds.has(e.id) ? 9 : 6, weight: uncoveredIds.has(e.id) ? 3 : 1,
+      color: uncoveredIds.has(e.id) ? "#b3261e" : "#ffffff", fillColor: e.severity === "extreme" ? "#d42a3c" : "#ef7300", fillOpacity: .9 })
+      .bindPopup(`<b>${esc(e.event_types.join(", "))}</b><br>${esc(e.places.slice(0, 2).join(", "))}<br>${uncoveredIds.has(e.id) ? "No open shelter within 50 km" : "Covered by an open shelter"}`)
+      .addTo(pins);
+  }
+
+  $("uncovered-count").textContent = `${data.uncovered.length} of ${data.severe.length} severe events`;
+  $("uncovered").innerHTML = data.uncovered.length ? data.uncovered.map(e => `<tr>
+      <td>${esc(e.event_types.join(", "))}<div class="sub">${e.timing === "forecast" ? "Forecast / warning" : "Observed"}</div></td>
+      <td>${esc(e.places.slice(0, 2).join(", "))}${e.states.length ? `<div class="sub">${esc(e.states.join(", "))}</div>` : ""}</td>
+      <td><span class="chip sev sev-${e.severity}">${SEV_LABEL[e.severity]}</span></td>
+      <td class="num">${e.nearest_km == null ? "No open shelters at all" : `${n(e.nearest_km)} km away`}</td>
+      <td><button class="btn small ghost" data-show="e${esc(e.id)}">Show on map</button></td></tr>`).join("")
+    : '<tr><td colspan="5" class="empty">Every severe event has an open shelter within 50 km.</td></tr>';
+
+  renderShelters();
+
+  $("sources").innerHTML = Object.entries(data.sources).map(([name, src]) => `<tr>
+    <td><b>${esc(name)}</b></td><td><span class="dot-src ${src.state}"></span>${src.state === "ok" ? "Working" : src.state === "error" ? "Failing" : "Loading"}</td>
+    <td class="num">${src.count ?? "–"}</td><td class="time">${src.updated ? ago(src.updated) : "–"}</td><td class="sub">${esc(src.error || "")}</td></tr>`).join("");
+}
+
+function renderShelters() {
+  const all = data.shelters;
+  const list = all.filter(s => filter === "all" || (filter === "pending" ? s.status === "pending"
+    : s.status === "pending" || (s.status === "approved" && (s.full || s.stale || !s.active))));
+  $("shelters").innerHTML = list.length ? list.map(s => {
+    const [label, cls] = APPROVAL[s.status];
+    const pct = Math.min(100, Math.round(100 * s.occupancy / s.capacity));
+    const acts = rejecting === s.id
+      ? `<input id="reject-note" maxlength="300" placeholder="Reason, shown to the operator"><button class="btn small danger" data-act="rejected" data-id="${s.id}">Confirm reject</button>`
+      : `${s.status !== "approved" ? `<button class="btn small" data-act="approved" data-id="${s.id}">Approve</button>` : ""}
+         ${s.status !== "rejected" ? `<button class="btn small ghost" data-act="reject" data-id="${s.id}">Reject</button>` : ""}
+         <button class="btn small ghost" data-show="s${s.id}">Map</button>`;
+    return `<tr>
+      <td><b>${esc(s.name)}</b>${s.demo ? ' <span class="chip sample">Sample</span>' : ""}<div class="sub">${esc(s.type)} · ${esc(s.address)}</div>${s.phone ? `<div class="sub">${esc(s.phone)}</div>` : ""}</td>
+      <td><span class="chip ${cls}">${label}</span>${s.review_note ? `<div class="sub">${esc(s.review_note)}</div>` : ""}</td>
+      <td><span class="chip ${s.active ? "ok" : ""}">${s.active ? "Open" : "Closed"}</span></td>
+      <td class="num">${n(s.occupancy)} / ${n(s.capacity)}${s.full ? ' <span class="stale">Nearly full</span>' : ""}<div class="meter avail-${avail(s)}"><i style="width:${pct}%"></i></div></td>
+      <td>${s.funds_needed ? `${inr(s.funds_needed)}<div class="sub">${esc(s.funds_note)}</div>` : ""}${s.supplies ? `<div class="sub">${esc(s.supplies)}</div>` : ""}${!s.funds_needed && !s.supplies ? '<span class="sub">None</span>' : ""}</td>
+      <td class="time">${ago(s.updated)}${s.stale && s.status === "approved" ? '<div class="stale">No update in 24 h</div>' : ""}</td>
+      <td class="acts">${acts}</td></tr>`;
+  }).join("") : `<tr><td colspan="7" class="empty">${filter === "all" ? "No shelters registered yet." : "Nothing here right now."}</td></tr>`;
+}
+
+document.querySelector(".filters").addEventListener("click", ev => {
+  const b = ev.target.closest("[data-f]");
+  if (!b) return;
+  filter = b.dataset.f;
+  document.querySelectorAll(".filters [data-f]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  renderShelters();
+});
+
+document.addEventListener("click", async ev => {
+  const show = ev.target.closest("[data-show]");
+  if (show && markers[show.dataset.show]) {
+    const m = markers[show.dataset.show];
+    $("map").scrollIntoView({ behavior: "smooth", block: "center" });
+    map.flyTo(m.getLatLng(), 9, { duration: .6 });
+    map.once("moveend", () => m.openPopup());
+    return;
+  }
+  const target = ev.target.closest("a[data-target]");
+  if (target && target.dataset.target === "shelters") {
+    filter = "attention";
+    document.querySelectorAll(".filters [data-f]").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.f === "attention")));
+    renderShelters();
+  }
+  const act = ev.target.closest("#shelters [data-act]");
+  if (!act) return;
+  const id = Number(act.dataset.id);
+  if (act.dataset.act === "reject") {
+    rejecting = id;
+    renderShelters();
+    $("reject-note")?.focus();
+    return;
+  }
+  act.disabled = true;
+  try {
+    await post(`/api/admin/shelters/${id}`, { status: act.dataset.act, note: act.dataset.act === "rejected" ? $("reject-note")?.value || "" : "" });
+    rejecting = null;
+    await load();
+  } catch (err) {
+    act.disabled = false;
+    act.insertAdjacentHTML("afterend", `<div class="sub" style="color:var(--bad)">${esc(err.message)}</div>`);
+  }
+});
+
+document.addEventListener("account", ev => {
+  if (!ev.detail || ev.detail.role !== "admin") return location.replace("/login?next=/control");
+  load();
+  setInterval(() => { if (rejecting === null) load(); }, 30000);  // don't wipe a rejection reason mid-typing
+});
+</script>
+</body>
+</html>

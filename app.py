@@ -21,6 +21,7 @@ from urllib.request import Request, urlopen
 
 import auth
 import feeds
+import shelters
 
 HERE = Path(__file__).parent
 PROMPT = (HERE / "extract_prompt.md").read_text(encoding="utf-8")
@@ -317,8 +318,64 @@ def structured_report(b):
                               "lat": lat, "lon": lon}]}
 
 
-PAGES = {"/": "index.html", "/login": "auth.html", "/signup": "auth.html", "/admin": "admin.html"}
-STATIC = {"/static/base.css": "text/css; charset=utf-8", "/static/account.js": "text/javascript; charset=utf-8"}
+PAGES = {"/": "index.html", "/login": "auth.html", "/signup": "auth.html", "/admin": "admin.html",
+         "/shelter": "shelter.html", "/control": "control.html"}
+PAGE_ROLES = {"/admin": ("admin",), "/control": ("admin",), "/shelter": ("shelter", "admin")}  # pages that need a role
+STATIC = {"/static/base.css": "text/css; charset=utf-8", "/static/account.js": "text/javascript; charset=utf-8",
+          "/static/picker.js": "text/javascript; charset=utf-8"}
+ROLES = ["user", "shelter", "admin"]
+COVER_KM = 50  # the control room expects an open shelter within this distance of every severe event
+STALE_S = 24 * 3600  # shelters not updated for this long are flagged
+
+
+def control_room():
+    """Everything the control room checks, in one payload."""
+    now = time.time()
+    events = cluster(visible_reports())
+    everything = shelters.list_all()
+    approved = [s for s in everything if s["status"] == "approved"]
+    open_ = [s for s in approved if s["active"]]
+    severe = [e for e in events if e["lat"] is not None and SEVERITY.index(e["severity"]) >= 2]
+    uncovered = []
+    for e in severe:
+        nearest = min((km(e, s) for s in open_), default=None)
+        if nearest is None or nearest > COVER_KM:
+            uncovered.append({**{k: e[k] for k in ("id", "event_types", "severity", "timing", "places", "states", "lat", "lon")},
+                              "nearest_km": nearest and round(nearest)})
+    full = [s for s in open_ if s["occupancy"] >= 0.9 * s["capacity"]]
+    stale = [s for s in approved if now - s["updated"] > STALE_S]
+    pending = [s for s in everything if s["status"] == "pending"]
+    reports_waiting = [r for r in submitted if not r.get("review")]
+    broken = [name for name, s in feed_status.items() if s["state"] == "error"]
+    funds = sum(s["funds_needed"] for s in approved)
+
+    def check(title, ok, detail, level="warn", target=None):
+        return {"title": title, "state": "ok" if ok else level, "detail": detail, "target": target}
+
+    checks = [
+        check("Live data sources", not broken, f"Failing: {', '.join(broken)}" if broken else "All sources are responding",
+              "fail" if len(broken) > 1 else "warn", "sources"),
+        check("Shelter coverage", not uncovered,
+              f"{len(uncovered)} of {len(severe)} severe events have no open shelter within {COVER_KM} km" if uncovered
+              else f"Every severe event has an open shelter within {COVER_KM} km", "fail", "uncovered"),
+        check("Shelter capacity", not full, f"{len(full)} open shelter{'s are' if len(full) != 1 else ' is'} 90% full or more"
+              if full else "Every open shelter has space", target="shelters"),
+        check("Shelter updates", not stale, f"{len(stale)} shelter{'s have' if len(stale) != 1 else ' has'} not reported in 24 hours"
+              if stale else "Every shelter has reported in the last 24 hours", target="shelters"),
+        check("Shelters awaiting approval", not pending, f"{len(pending)} waiting for approval" if pending
+              else "Nothing waiting", target="shelters"),
+        check("Citizen reports awaiting review", not reports_waiting, f"{len(reports_waiting)} waiting in the admin page"
+              if reports_waiting else "Nothing waiting", target="reports"),
+    ]
+    beds = sum(max(0, s["capacity"] - s["occupancy"]) for s in open_)
+    return {
+        "now": now, "checks": checks, "sources": feed_status, "uncovered": uncovered,
+        "summary": {"events": len(events), "severe": len(severe), "shelters": len(approved), "open": len(open_),
+                    "pending": len(pending), "beds_free": beds, "capacity": sum(s["capacity"] for s in open_),
+                    "occupancy": sum(s["occupancy"] for s in open_), "funds": funds, "reports_waiting": len(reports_waiting)},
+        "severe": [{k: e[k] for k in ("id", "event_types", "severity", "timing", "places", "lat", "lon")} for e in severe],
+        "shelters": [{**s, "stale": now - s["updated"] > STALE_S, "full": s in full} for s in everything],
+    }
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -398,11 +455,14 @@ class Handler(BaseHTTPRequestHandler):
     def get(self, url):
         path = url.path
         if path in PAGES:
-            if path == "/admin":
+            if path in PAGE_ROLES:
                 me = self.user()
                 if not me:
-                    return self.send(302, b"", "text/plain", [("Location", "/login?next=/admin")])
-                if me["role"] != "admin":
+                    signin = "/login?as=shelter&next=/shelter" if path == "/shelter" else f"/login?next={path}"
+                    return self.send(302, b"", "text/plain", [("Location", signin)])
+                if me["role"] not in PAGE_ROLES[path]:
+                    if path == "/shelter":  # a regular account can opt in to running shelters from this page
+                        return self.send(200, (HERE / PAGES[path]).read_bytes(), "text/html; charset=utf-8")
                     return self.send(403, b"This page is for administrators.", "text/plain; charset=utf-8")
             return self.send(200, (HERE / PAGES[path]).read_bytes(), "text/html; charset=utf-8")
         if path in STATIC:
@@ -412,6 +472,20 @@ class Handler(BaseHTTPRequestHandler):
                                         "demo": bool(seed), "ai": bool(os.environ.get("ANTHROPIC_API_KEY"))})
         if path == "/api/me":
             return self.send_json(200, {"user": self.user()})
+        if path == "/api/shelters":
+            return self.send_json(200, {"shelters": shelters.list_public(), "types": shelters.TYPES,
+                                        "facilities": shelters.FACILITIES})
+        if path == "/api/my/shelters":
+            me = self.user()
+            if not me:
+                raise HTTPError(401, "Sign in first.")
+            return self.send_json(200, {"shelters": shelters.list_owned(me["id"]), "types": shelters.TYPES,
+                                        "facilities": shelters.FACILITIES})
+        if path == "/api/control":
+            me = self.user()
+            if not me or me["role"] != "admin":
+                raise HTTPError(403, "Administrators only.")
+            return self.send_json(200, control_room())
         if path == "/api/places":
             q = (parse_qs(url.query).get("q") or [""])[0].strip()[:100]
             if len(q) < 2:
@@ -436,6 +510,8 @@ class Handler(BaseHTTPRequestHandler):
             user, error = auth.signup(str(body.get("name", "")), str(body.get("email", "")), str(body.get("password", "")))
             if error:
                 raise HTTPError(400, error)
+            if body.get("role") == "shelter":  # safe to self-assign: an operator's shelters stay hidden until approved
+                user = auth.update_user(user["id"], role="shelter")
             return self.send_json(201, {"user": user}, [self.session_cookie(auth.new_session(user["id"]))])
         if path == "/api/login":
             if not allow(f"login:{self.ip()}", 10, 900):
@@ -460,8 +536,14 @@ class Handler(BaseHTTPRequestHandler):
             alert = body.get("alert")
             auth.set_alert(me["id"], clean_alert(alert) if alert is not None else None)
             return self.send_json(200, {"user": self.user()})
+        if path == "/api/me/role":
+            if body.get("role") != "shelter" or me["role"] != "user":
+                raise HTTPError(400, "Regular accounts can switch to a shelter operator account; nothing else changes here.")
+            return self.send_json(200, {"user": auth.update_user(me["id"], role="shelter")})
         if path == "/api/reports":
             return self.send_json(201, self.new_report(me, body))
+        if path.startswith("/api/my/shelters"):
+            return self.my_shelters(me, path.removeprefix("/api/my/shelters").strip("/"), body)
         if path.startswith("/api/admin/"):
             if me["role"] != "admin":
                 raise HTTPError(403, "Administrators only.")
@@ -502,8 +584,46 @@ class Handler(BaseHTTPRequestHandler):
             save(REPORTS_FILE, submitted)
         return report
 
+    def my_shelters(self, me, rest, body):
+        """Operators manage their own shelters; admins can manage any."""
+        if me["role"] not in ("shelter", "admin"):
+            raise HTTPError(403, "Switch to a shelter operator account first.")
+        try:
+            if not rest:  # create
+                if len(shelters.list_owned(me["id"])) >= 20:
+                    raise HTTPError(400, "An account can register up to 20 shelters.")
+                fields = self.with_state(shelters.clean(body))
+                return self.send_json(201, {"shelter": shelters.create(me["id"], fields)})
+            ident, _, action = rest.partition("/")
+            shelter = shelters.get(int(ident)) if ident.isdigit() else None
+            if not shelter or (shelter["owner_id"] != me["id"] and me["role"] != "admin"):
+                raise HTTPError(404, "No such shelter.")
+            if action == "quick":
+                return self.send_json(200, {"shelter": shelters.quick(shelter["id"], body.get("active"), body.get("occupancy"))})
+            if action == "delete":
+                shelters.delete(shelter["id"])
+                return self.send_json(200, {"ok": True})
+            if not action:
+                return self.send_json(200, {"shelter": shelters.update(shelter["id"], self.with_state(shelters.clean(body)))})
+        except shelters.Invalid as e:
+            raise HTTPError(400, str(e))
+        raise HTTPError(404, "not found")
+
+    @staticmethod
+    def with_state(fields):
+        if not fields["state"]:  # fill the state from the map point, for the state filter and the control room
+            fields["state"] = reverse_geocode(fields["lat"], fields["lon"])[1]
+        return fields
+
     def admin(self, me, path, body):
         kind, _, ident = path.partition("/")
+        if kind == "shelters":
+            shelter = shelters.get(int(ident)) if ident.isdigit() else None
+            if not shelter:
+                raise HTTPError(404, "No such shelter.")
+            if body.get("status") not in shelters.STATUSES:
+                raise HTTPError(400, "status must be pending, approved or rejected.")
+            return self.send_json(200, {"shelter": shelters.set_status(shelter["id"], body["status"], str(body.get("note", "")))})
         if kind == "reports":
             with write_lock:
                 report = next((r for r in submitted if r["id"] == ident), None)
@@ -530,8 +650,8 @@ class Handler(BaseHTTPRequestHandler):
             role, disabled = body.get("role"), body.get("disabled")
             if user_id == me["id"] and (role is not None or disabled is not None):
                 raise HTTPError(400, "You can't change your own role or disable your own account.")
-            if role not in (None, "user", "admin") or disabled not in (None, True, False):
-                raise HTTPError(400, "role must be user or admin; disabled must be true or false.")
+            if role not in (None, *ROLES) or disabled not in (None, True, False):
+                raise HTTPError(400, "role must be user, shelter or admin; disabled must be true or false.")
             user = auth.update_user(user_id, role, disabled)
             if not user:
                 raise HTTPError(404, "No such user.")
@@ -544,6 +664,7 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     auth.init()
+    shelters.init()
     host, port = os.environ.get("HOST", "127.0.0.1"), int(os.environ.get("PORT", "8000"))
     print(f"Weather intelligence prototype on http://{'localhost' if host == '127.0.0.1' else host}:{port}", flush=True)
     threading.Thread(target=refresh_feeds, daemon=True).start()

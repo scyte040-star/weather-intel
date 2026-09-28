@@ -30,8 +30,10 @@
     box.innerHTML = `<details class="account">
       <summary aria-label="Account menu"><span class="avatar" aria-hidden="true">${esc(initials)}</span><span>${esc(me.name.split(" ")[0])}</span></summary>
       <div class="menu">
-        <div class="who"><b>${esc(me.name)}</b>${esc(me.email)}${me.role === "admin" ? " · Administrator" : ""}</div>
+        <div class="who"><b>${esc(me.name)}</b>${esc(me.email)}${{ admin: " · Administrator", shelter: " · Shelter operator" }[me.role] || ""}</div>
         ${location.pathname !== "/" ? '<a href="/">Live map</a>' : ""}
+        ${me.role !== "user" && location.pathname !== "/shelter" ? '<a href="/shelter">My shelters</a>' : ""}
+        ${me.role === "admin" && location.pathname !== "/control" ? '<a href="/control">Control room</a>' : ""}
         ${me.role === "admin" && location.pathname !== "/admin" ? '<a href="/admin">Admin</a>' : ""}
         <button type="button" data-act="password">Change password</button>
         <button type="button" data-act="logout">Sign out</button>

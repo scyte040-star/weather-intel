@@ -105,6 +105,7 @@
       <button class="btn" id="submit">Sign in</button>
     </form>
     <p class="switch" id="switch"></p>
+    <p class="switch guest" id="as-switch"></p>
     <p class="switch guest"><a href="/">Continue to the live map without an account</a></p>
   </div>
 </main>
@@ -115,14 +116,21 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 const SEV = ["low", "moderate", "high", "extreme"];
 const params = new URLSearchParams(location.search);
 // Only same-site paths: "//evil.example" and "https://..." would send people off-site after signing in.
-const next = /^\/(?!\/)/.test(params.get("next") || "") ? params.get("next") : "/";
+const shelter = params.get("as") === "shelter";  // the shelter operators' sign-in
+const next = /^\/(?!\/)/.test(params.get("next") || "") ? params.get("next") : shelter ? "/shelter" : "/";
+$("as-switch").innerHTML = shelter
+  ? 'Not running a shelter? <a href="/login">Regular sign in</a>'
+  : 'Run a relief shelter? <a href="/login?as=shelter&amp;next=/shelter">Shelter operator sign in</a>';
 
 function setMode(mode) {
   const signup = mode === "signup";
-  document.title = `${signup ? "Create an account" : "Sign in"} · Weather Intelligence`;
-  $("title").textContent = signup ? "Create an account" : "Sign in";
-  $("subtitle").textContent = signup
-    ? "Report weather events from where you are, and get alerts for the area you care about."
+  const titles = shelter ? ["Register as a shelter operator", "Shelter operator sign in"] : ["Create an account", "Sign in"];
+  document.title = `${signup ? titles[0] : titles[1]} · Weather Intelligence`;
+  $("title").textContent = signup ? titles[0] : titles[1];
+  $("subtitle").textContent = shelter
+    ? (signup ? "List your relief shelter, keep its space and facilities up to date, and ask for funds or supplies. It appears on the map once the control room approves it."
+              : "Sign in to update your shelters: open or closed, people staying, facilities and needs.")
+    : signup ? "Report weather events from where you are, and get alerts for the area you care about."
     : "Welcome back. Sign in to report events and manage your alerts.";
   $("name-field").hidden = !signup;
   $("pw-hint").hidden = !signup;
@@ -157,6 +165,7 @@ $("form").addEventListener("submit", async ev => {
   const signup = location.pathname === "/signup";
   const body = { email: $("email").value, password: $("password").value };
   if (signup) body.name = $("name").value;
+  if (signup && shelter) body.role = "shelter";
   if (signup && !body.name.trim()) return fail("Enter your name.");
   if (!$("email").checkValidity()) return fail("Enter a valid email address.");
   if (signup && body.password.length < 8) return fail("Use a password of at least 8 characters.");

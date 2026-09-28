@@ -89,6 +89,26 @@ textarea { min-height: 84px; resize: vertical; }
 .sev-low { --c: var(--sev-low); } .sev-moderate { --c: var(--sev-moderate); }
 .sev-high { --c: var(--sev-high); } .sev-extreme { --c: var(--sev-extreme); }
 
+/* Location picker (static/picker.js) */
+.picker { display: grid; gap: 8px; font-size: 13.5px; letter-spacing: 0; text-transform: none; font-weight: 400; color: var(--text); }
+.picker .search { display: flex; gap: 6px; }
+.picker .results { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.picker .results button { width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; background: var(--panel-2); text-align: left; cursor: pointer; font-size: 13px; }
+.picker .results button:hover { background: var(--accent-soft); }
+.picker .ways { display: flex; gap: 6px; flex-wrap: wrap; }
+.picker .chosen { margin: 0; padding: 7px 10px; border-radius: 7px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.picker .chosen.none { background: var(--panel-2); color: var(--muted); font-weight: 400; }
+.leaflet-container.picking { cursor: crosshair; }
+.pick-pin { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); border: 3px solid var(--panel); box-shadow: 0 0 0 2px var(--accent); }
+
+/* Shelter pins and availability colours: space / nearly full / full / closed */
+.shelter-pin { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 7px; background: var(--a);
+               border: 2px solid var(--pin-ring); box-shadow: 0 1px 5px rgb(0 0 0 / 35%); font-size: 14px; }
+.avail-space { --a: #2e9e5b; } .avail-nearly { --a: #e0a800; } .avail-full { --a: #d42a3c; } .avail-closed { --a: #7b8794; }
+.meter { height: 6px; border-radius: 3px; background: var(--panel-2); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--a); }
+.chip.sample { background: var(--fc-soft); color: var(--fc); }
+
 /* Dialogs */
 dialog { width: min(400px, calc(100% - 32px)); padding: 22px; border: 1px solid var(--line); border-radius: 12px;
          background: var(--panel); color: var(--text); box-shadow: var(--shadow); }
